@@ -1,10 +1,11 @@
 use crate::combat::components::{AttackButton, AttackDice, AttackText, CombatManager, CombatState, CombatStats, DefenseText, Enemy, EnemyMarker, FightEvent, HealthText, HeroSpellButton, ManaDice, ManaText, PlayerMarker, RoundText, Selected};
 use crate::combat::components::CombatState::{EnemyAttack, EnemyTurn, Finalize, PlayerAttack, PlayerTurn};
-use crate::combat::components::EnemyType::Lizard;
-use crate::CombatState::{End, EnemyDeath, Reward};
+use crate::combat::components::{EnemyType::Lizard, EnemyType::Medusa, EnemyType::Gin, EnemyType::SmallDragon, EnemyType::BigDragon, EnemyType::Demon};
+use crate::CombatState::{End, EnemyDeath};
+use crate::Element::SkillPack;
 use crate::GameState;
 use crate::KeyCode::Space;
-use crate::player::{Card, EncounterTracker, Player};
+use crate::player::{Card, collide_check, EncounterTracker, Player};
 use crate::prelude::*;
 
 pub fn init_manager(
@@ -51,6 +52,7 @@ pub fn manager_default(mut manager: ResMut<CombatManager>) {
     manager.enemy_skip_round = false;
     manager.player_death = false;
     manager.enemy_death = false;
+    manager.enemy_lvl = 0;
 }
 
 
@@ -334,27 +336,37 @@ pub fn combat_end_button(
     mut manager: ResMut<CombatManager>,
     selected_query: Query<&Selected, With<CombatEndButton>>,
     mut state: ResMut<State<GameState>>,
+    mut items: ResMut<ItemPull>,
+    mut player_query: Query<&mut Player>,
+    template_storage: Res<TemplateStorage>,
+    mut encounter_query: Query<(&Transform, &mut EncounterType), (With<EncounterSpawner>, Without<Player>)>,
 ) {
-    println!("end");
-    if state.current() == &World {
+
+    if state.current() == &World || state.current() == &BagPack || state.current() == &Deck {
         return;
     }
+
     let mut selected = selected_query.single().selected;
-    let mut transform = player_transform_query.single_mut();
+    let mut pl_transform = player_transform_query.single_mut();
+    let mut player = player_query.single_mut();
 
     if selected && manager.enemy_death {
-        println!("Changing to World");
-        //todo логика получения награды и спавна в мире в той же точке
-        transform.translation = Vec3::new(2.0, -2.0, 900.0);
-        state.set(World).unwrap();
+        add_item(&template_storage, &mut player, manager.enemy_lvl, &mut items);
+        for (transform, mut enc_type) in encounter_query.iter_mut()  {
+            if collide_check(transform.translation, pl_transform.translation) {
+                enc_type.1 = true;
+                println!("visit true");
+            }
+        }
+        state.set(World).expect("fail state");
     }
 
     if selected && manager.player_death {
-        println!("Changing to World");
-        //todo логика потери шмота при смерти и спавна в городе
-        transform.translation = Vec3::new(2.0, -2.0, 900.0);
-        state.set(World).unwrap();
+        pl_transform.translation = Vec3::new(6., -3., 500.);
+        state.set(World).expect("fail state");
     }
+
+
 }
 
 
@@ -438,54 +450,53 @@ pub fn enemy_attack_effect(
     frame_sheet: ResMut<FramesSheet>,
     time: Res<Time>,
     mut manager: ResMut<CombatManager>,
-    enemy_query: Query<&Enemy>
+    enemy_query: Query<&Enemy>,
 ) {
-
     let enemy_type = enemy_query.single().enemy_type;
 
     let idle_frames = match enemy_type {
         Lizard => frame_sheet.lizard_idle.to_vec(),
-        EnemyType::Medusa => frame_sheet.medusa_idle.to_vec(),
-        EnemyType::SmallDragon => frame_sheet.small_dragon_idle.to_vec(),
-        EnemyType::Gin => frame_sheet.gin_idle.to_vec(),
-        EnemyType::BigDragon => frame_sheet.big_dragon_idle.to_vec(),
-        EnemyType::Demon => frame_sheet.demon_idle.to_vec(),
+        Medusa => frame_sheet.medusa_idle.to_vec(),
+        SmallDragon => frame_sheet.small_dragon_idle.to_vec(),
+        Gin => frame_sheet.gin_idle.to_vec(),
+        BigDragon => frame_sheet.big_dragon_idle.to_vec(),
+        Demon => frame_sheet.demon_idle.to_vec(),
     };
 
     let attack_frames = match enemy_type {
         Lizard => frame_sheet.lizard_attack.to_vec(),
-        EnemyType::Medusa => frame_sheet.medusa_attack.to_vec(),
-        EnemyType::SmallDragon => frame_sheet.small_dragon_attack.to_vec(),
-        EnemyType::Gin => frame_sheet.gin_attack.to_vec(),
-        EnemyType::BigDragon => frame_sheet.big_dragon_attack.to_vec(),
-        EnemyType::Demon => frame_sheet.demon_attack.to_vec(),
+        Medusa => frame_sheet.medusa_attack.to_vec(),
+        SmallDragon => frame_sheet.small_dragon_attack.to_vec(),
+        Gin => frame_sheet.gin_attack.to_vec(),
+        BigDragon => frame_sheet.big_dragon_attack.to_vec(),
+        Demon => frame_sheet.demon_attack.to_vec(),
     };
 
     let hurt_frames = match enemy_type {
         Lizard => frame_sheet.lizard_hurt.to_vec(),
-        EnemyType::Medusa => frame_sheet.medusa_hurt.to_vec(),
-        EnemyType::SmallDragon => frame_sheet.small_dragon_hurt.to_vec(),
-        EnemyType::Gin => frame_sheet.gin_hurt.to_vec(),
-        EnemyType::BigDragon => frame_sheet.big_dragon_hurt.to_vec(),
-        EnemyType::Demon => frame_sheet.demon_hurt.to_vec(),
+        Medusa => frame_sheet.medusa_hurt.to_vec(),
+        SmallDragon => frame_sheet.small_dragon_hurt.to_vec(),
+        Gin => frame_sheet.gin_hurt.to_vec(),
+        BigDragon => frame_sheet.big_dragon_hurt.to_vec(),
+        Demon => frame_sheet.demon_hurt.to_vec(),
     };
 
     let death_frames = match enemy_type {
         Lizard => frame_sheet.lizard_death.to_vec(),
-        EnemyType::Medusa => frame_sheet.medusa_death.to_vec(),
-        EnemyType::SmallDragon => frame_sheet.small_dragon_death.to_vec(),
-        EnemyType::Gin => frame_sheet.gin_death.to_vec(),
-        EnemyType::BigDragon => frame_sheet.big_dragon_death.to_vec(),
-        EnemyType::Demon => frame_sheet.demon_death.to_vec(),
+        Medusa => frame_sheet.medusa_death.to_vec(),
+        SmallDragon => frame_sheet.small_dragon_death.to_vec(),
+        Gin => frame_sheet.gin_death.to_vec(),
+        BigDragon => frame_sheet.big_dragon_death.to_vec(),
+        Demon => frame_sheet.demon_death.to_vec(),
     };
 
     let last_death_frame = match enemy_type {
         Lizard => death_frames[5],
-        EnemyType::Medusa => death_frames[5],
-        EnemyType::SmallDragon => death_frames[3],
-        EnemyType::Gin => death_frames[5],
-        EnemyType::BigDragon => death_frames[4],
-        EnemyType::Demon => death_frames[5],
+        Medusa => death_frames[5],
+        SmallDragon => death_frames[3],
+        Gin => death_frames[5],
+        BigDragon => death_frames[4],
+        Demon => death_frames[5],
     };
 
 
@@ -595,37 +606,43 @@ pub fn spawn_enemy(
     texture_storage: Res<TextureStorage>,
     template_storage: Res<TemplateStorage>,
     mut encounter_event: EventReader<EncounterEvent>,
+    mut manager: ResMut<CombatManager>,
 ) {
     if let Some(event) = encounter_event.iter().next() {
-
         let enemy_type = event.0;
         let enemy_stats = template_storage.get_enemy(enemy_type).unwrap();
 
+        match enemy_type {
+            Lizard | Medusa => manager.enemy_lvl = 1,
+            Gin | SmallDragon => manager.enemy_lvl = 2,
+            BigDragon | Demon => manager.enemy_lvl = 3
+        }
+
         let attack_text_translation = match enemy_type {
             Lizard => Vec3::new(-0.2, -1.4, 205.0),
-            EnemyType::Medusa => Vec3::new(-0.2, -1.7, 205.0),
-            EnemyType::SmallDragon => Vec3::new(-0.2, -1.4, 205.0),
-            EnemyType::Gin => Vec3::new(-0.2, -1.7, 205.0),
-            EnemyType::BigDragon => Vec3::new(0., -2.2, 205.0),
-            EnemyType::Demon => Vec3::new(-0.2, -1.9, 205.0),
+            Medusa => Vec3::new(-0.2, -1.7, 205.0),
+            SmallDragon => Vec3::new(-0.2, -1.4, 205.0),
+            Gin => Vec3::new(-0.2, -1.7, 205.0),
+            BigDragon => Vec3::new(0., -2.2, 205.0),
+            Demon => Vec3::new(-0.2, -1.9, 205.0),
         };
 
         let defense_text_translation = match enemy_type {
             Lizard => Vec3::new(-0.2, -2., 205.0),
-            EnemyType::Medusa => Vec3::new(-0.2, -2.3, 205.0),
-            EnemyType::SmallDragon => Vec3::new(-0.2, -2., 205.0),
-            EnemyType::Gin => Vec3::new(-0.2, -2.3, 205.0),
-            EnemyType::BigDragon => Vec3::new(0., -2.8, 205.0),
-            EnemyType::Demon => Vec3::new(-0.2, -2.5, 205.0),
+            Medusa => Vec3::new(-0.2, -2.3, 205.0),
+            SmallDragon => Vec3::new(-0.2, -2., 205.0),
+            Gin => Vec3::new(-0.2, -2.3, 205.0),
+            BigDragon => Vec3::new(0., -2.8, 205.0),
+            Demon => Vec3::new(-0.2, -2.5, 205.0),
         };
 
         let health_text_translation = match enemy_type {
             Lizard => Vec3::new(-0.2, -2.6, 205.0),
-            EnemyType::Medusa => Vec3::new(-0.2, -2.9, 205.0),
-            EnemyType::SmallDragon => Vec3::new(-0.2, -2.6, 205.0),
-            EnemyType::Gin => Vec3::new(-0.2, -2.9, 205.0),
-            EnemyType::BigDragon => Vec3::new(0., -3.4, 205.0),
-            EnemyType::Demon => Vec3::new(-0.2, -3.1, 205.0),
+            Medusa => Vec3::new(-0.2, -2.9, 205.0),
+            SmallDragon => Vec3::new(-0.2, -2.6, 205.0),
+            Gin => Vec3::new(-0.2, -2.9, 205.0),
+            BigDragon => Vec3::new(0., -3.4, 205.0),
+            Demon => Vec3::new(-0.2, -3.1, 205.0),
         };
 
         let attack_text = spawn_text(

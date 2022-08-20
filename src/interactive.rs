@@ -36,7 +36,7 @@ impl Plugin for InteractivePlugin {
                     .with_system(back_pack_exit)
             )
             .add_system_set(
-                SystemSet::on_update(SillPack)
+                SystemSet::on_update(Deck)
                     .with_system(back_pack_exit)
                     .with_system(spell)
             );

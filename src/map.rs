@@ -1,10 +1,10 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use crate::prelude::*;
+use crate::WorldEventType::{Altar, Camp};
 
 
 pub struct MapPlugin;
-
 
 #[derive(Component)]
 pub struct TileCollider;
@@ -13,7 +13,7 @@ pub struct TileCollider;
 pub struct EncounterSpawner;
 
 #[derive(Component)]
-pub struct EncounterType(pub EnemyType);
+pub struct EncounterType(pub EnemyType, pub bool);
 
 
 #[derive(Component)]

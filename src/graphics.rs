@@ -1,9 +1,9 @@
+use std::default::Default;
 use std::fmt;
 use std::fmt::Formatter;
 use std::ops::Deref;
 use bevy::ecs::system::EntityCommands;
 use crate::AnimationType::Idle;
-use crate::CursorIcon::Default;
 use crate::prelude::*;
 use crate::combat::{EnemyType, Selected};
 use crate::player::{Card, CardView, Item, CombatDeckSpell};
@@ -916,20 +916,77 @@ pub fn spawn_tile(
         .insert(Tile(enumerate))
         .id();
 
-
+    //добавить признак посещения
     match char {
         '1' | '2' | '3' => {
             commands.entity(tile)
                 .insert(Name::new("Collider"))
                 .insert(TileCollider);
-        }
+        },
         'm' | 'M' | 'd' | 'j' | 's' | 'S' | 'p' | 'D' => {
             commands.entity(tile)
                 .insert(EncounterSpawner)
-                .insert(EncounterType(EnemyType::get_type(char)))
+                .insert(EncounterType(
+                    (EnemyType::get_type(char)), false)
+                )
                 .insert(Name::new("EncounterPoint"))
                 .insert(Point(transform.clone()));
-        }
+        },
+        'c' => {
+            commands.entity(tile)
+                .insert(WorldEventMarker)
+                .insert(WorldEvent {
+                    event_type: WorldEventType::Camp,
+                    lvl: 1,
+                    is_visited: false
+                })
+                .insert(Name::new("Small camp"))
+                .insert(Point(transform.clone()));
+        },
+        'C' => {
+            commands.entity(tile)
+                .insert(WorldEventMarker)
+                .insert(WorldEvent {
+                    event_type: WorldEventType::Camp,
+                    lvl: 2,
+                    is_visited: false
+                })
+                .insert(Name::new("Middle camp"))
+                .insert(Point(transform.clone()));
+        },
+        '(' => {
+            commands.entity(tile)
+                .insert(WorldEventMarker)
+                .insert(WorldEvent {
+                    event_type: WorldEventType::Camp,
+                    lvl: 3,
+                    is_visited: false
+                })
+                .insert(Name::new("Big camp"))
+                .insert(Point(transform.clone()));
+        },
+        'r' => {
+            commands.entity(tile)
+                .insert(WorldEventMarker)
+                .insert(WorldEvent {
+                    event_type: WorldEventType::Ruins,
+                    lvl: 2,
+                    is_visited: false
+                })
+                .insert(Name::new("Ruins"))
+                .insert(Point(transform.clone()));
+        },
+        'a' => {
+            commands.entity(tile)
+                .insert(WorldEventMarker)
+                .insert(WorldEvent {
+                    event_type: WorldEventType::Altar,
+                    lvl: 1,
+                    is_visited: false
+                })
+                .insert(Name::new("Altar"))
+                .insert(Point(transform.clone()));
+        },
         _ => {
             commands.entity(tile)
                 .insert(Name::new("Point"))

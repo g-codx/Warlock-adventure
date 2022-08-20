@@ -14,7 +14,9 @@ pub struct TemplatePlugin;
 
 impl Plugin for TemplatePlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system_to_stage(StartupStage::PreStartup, Self::load);
+        app
+            .add_startup_system_to_stage(StartupStage::PreStartup, Self::load)
+            .init_resource::<Templates>();
     }
 }
 
@@ -49,7 +51,7 @@ pub enum EntityType {
     Item,
 }
 
-#[derive(Clone, Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug, Default)]
 pub struct Templates {
     pub entities: Vec<Template>,
 }
@@ -83,10 +85,16 @@ impl Templates {
                 }
             });
 
+        let types = self.entities
+            .iter()
+            .map(|t| (t.id, t.entity_type.clone()))
+            .collect::<Vec<(usize, EntityType)>>();
+
         commands.insert_resource(TemplateStorage {
             skill_cards,
             enemies,
-            items
+            items,
+            types
         });
     }
 }
@@ -96,6 +104,7 @@ pub struct TemplateStorage {
     pub skill_cards: Vec<Template>,
     pub enemies: Vec<Template>,
     pub items: Vec<Template>,
+    pub types: Vec<(usize, EntityType)>,
 }
 
 

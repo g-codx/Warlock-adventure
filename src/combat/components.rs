@@ -32,6 +32,7 @@ pub struct CombatManager {
     pub timer: Timer,
     pub enemy_death: bool,
     pub player_death: bool,
+    pub enemy_lvl: usize,
 }
 
 impl CombatManager {
@@ -75,7 +76,8 @@ impl Default for CombatManager {
             enemy_skip_round: false,
             timer: Timer::from_seconds(2., true),
             enemy_death: false,
-            player_death: false
+            player_death: false,
+            enemy_lvl: 0,
         }
     }
 }
@@ -124,8 +126,6 @@ pub enum CombatState {
     EnemyDeath,
     Finalize,
     End,
-    Reward
-
 }
 
 

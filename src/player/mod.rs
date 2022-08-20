@@ -26,6 +26,7 @@ impl Plugin for PlayerPlugin {
             .add_system_set(
                 SystemSet::on_update(World)
                     .with_system(player_encounter_checking.after(player_movement))
+                    .with_system(player_world_event_checking.after(player_movement))
                     .with_system(player_movement.after(cursor_position))
                     .with_system(move_dice)
                     .with_system(bag_button)
@@ -46,19 +47,19 @@ impl Plugin for PlayerPlugin {
                     .with_system(despawn_bag_interface)
             )
             .add_system_set(
-                SystemSet::on_enter(SillPack)
+                SystemSet::on_enter(Deck)
                     .with_system(spawn_skill_pack_interface)
                     .with_system(bag_interface_camera)
             )
             .add_system_set(
-                SystemSet::on_update(SillPack)
+                SystemSet::on_update(Deck)
                     .with_system(bag_button_exit)
                     .with_system(take_spell)
                     .with_system(remove_spell)
                     .with_system(update_spell_position)
             )
             .add_system_set(
-                SystemSet::on_exit(SillPack)
+                SystemSet::on_exit(Deck)
                     .with_system(despawn_bag_interface)
             )
             .add_startup_system(spawn_player)

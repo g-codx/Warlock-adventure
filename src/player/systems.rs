@@ -24,7 +24,7 @@ pub fn skill_pack_button(
     let selected = selected_query.single();
 
     if selected.selected {
-        state.set(SillPack).expect("Failed to change states");
+        state.set(Deck).expect("Failed to change states");
     }
 }
 
@@ -34,6 +34,7 @@ pub fn bag_button_exit(
 ) {
     let selected = selected_query.single();
     if selected.selected {
+        println!("exit selected");
         state.set(World).expect("Failed to change states");
     }
 }
@@ -222,6 +223,7 @@ pub fn spawn_skill_pack_interface(
     template_storage: Res<TemplateStorage>,
     mut update_event: EventWriter<UpdateEvent>,
 ) {
+    println!("spawn deck");
     let mut sprites = Vec::with_capacity(5);
     let player = player_query.single();
     let cards_in_bag = &player.deck;
@@ -301,6 +303,7 @@ pub fn spawn_bag_interface(
     template_storage: Res<TemplateStorage>,
     player_query: Query<&Player>,
 ) {
+    println!("spawn bag");
     let mut sprites = Vec::with_capacity(5);
     let player = player_query.single();
     let items = player.items_bag.clone();
@@ -505,6 +508,7 @@ pub fn move_dice(
     }
 }
 
+
 pub fn player_encounter_checking(
     player_query: Query<&Transform, With<Player>>,
     encounter_query: Query<(&Transform, &EncounterType), (With<EncounterSpawner>, Without<Player>)>,
@@ -515,22 +519,41 @@ pub fn player_encounter_checking(
 
 
     for (transform, enc_type) in encounter_query.iter()  {
-        if collide_check(transform.translation, player_translation) {
+        if collide_check(transform.translation, player_translation) && !enc_type.1 {
             println!("Changing to Combat");
             encounter_event.send(EncounterEvent(enc_type.0));
             state.set(Combat).expect("Failed to change states");
         }
     }
+}
 
-    // if encounter_query
-    //     .iter()
-    //     .any(|&transform| collide_check(
-    //         player_translation, transform.translation))
-    // {
-    //     println!("Changing to Combat");
-    //     encounter_event.send()
-    //     state.set(Combat).expect("Failed to change states");
-    // }
+
+pub fn player_world_event_checking(
+    player_transform_query: Query<&Transform, With<Player>>,
+    mut player_query: Query<&mut Player>,
+    mut event_query: Query<(&Transform, &mut WorldEvent), (With<WorldEventMarker>, Without<Player>)>,
+    mut items: ResMut<ItemPull>,
+    template_storage: Res<TemplateStorage>,
+) {
+    let player_translation = player_transform_query.single().translation;
+    let mut player = player_query.single_mut();
+
+    for (transform,mut event) in event_query.iter_mut() {
+        if collide_check(transform.translation, player_translation) && !event.is_visited {
+            event.is_visited = true;
+            match event.event_type {
+                WorldEventType::Camp => {
+                    add_item(&template_storage, &mut player, event.lvl, &mut items);
+                },
+                WorldEventType::Ruins => {
+                    add_item(&template_storage, &mut player, 1, &mut items);
+                    add_item(&template_storage, &mut player, 2, &mut items);
+                }
+                WorldEventType::Altar => {}
+            }
+        }
+    }
+
 }
 
 pub fn hide_player(
@@ -668,17 +691,17 @@ pub fn spawn_player(
     };
 
 
-    let mut items = Vec::new();
-
-    for _ in 0..5 {
-        items.push(storage.roll_item(1));
-    }
-    for _ in 0..5 {
-        items.push(storage.roll_item(2));
-    }
-    for _ in 0..5 {
-        items.push(storage.roll_item(3));
-    }
+    let mut items: Vec<ItemView> = Vec::new();
+    //
+    // for _ in 0..5 {
+    //     items.push(storage.roll_item(1));
+    // }
+    // for _ in 0..5 {
+    //     items.push(storage.roll_item(2));
+    // }
+    // for _ in 0..5 {
+    //     items.push(storage.roll_item(3));
+    // }
 
 
     let mut combat_cards: Vec<CardView> = Vec::new();
@@ -694,10 +717,10 @@ pub fn spawn_player(
     //     combat_cards.push(storage.roll_card(3));
     // }
 
-    (1..=16)
-        .for_each(|id| {
-            cards_in_bag.push(storage.get_card(id))
-        });
+    // (1..=16)
+    //     .for_each(|id| {
+    //         cards_in_bag.push(storage.get_card(id))
+    //     });
 
 
     if !combat_cards.is_empty() {

@@ -84,6 +84,22 @@ impl Player {
             .filter(|s| s.level == lvl)
             .count()
     }
+
+    pub fn add_in_deck(&mut self, id: usize, level: usize) {
+        let card_view = CardView {
+            id,
+            level
+        };
+        self.deck.push(card_view);
+    }
+
+    pub fn add_in_bag(&mut self, id: usize, level: usize) {
+        let item_view = ItemView {
+            id,
+            level
+        };
+        self.items_bag.push(item_view);
+    }
 }
 
 #[derive(Component, Inspectable, Default)]

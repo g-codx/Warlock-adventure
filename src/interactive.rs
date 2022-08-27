@@ -4,7 +4,7 @@ use crate::GameState;
 use crate::KeyCode::*;
 use crate::prelude::*;
 use crate::combat::{AttackButton,HeroSpellButton,AttackDice,ManaDice,Selected};
-use crate::player::{Backpack, Exit, Card, MoveDice, Next, SkillPack, Item, CombatDeckSpell, CardView};
+use crate::player::{Backpack, BagExit, Card, MoveDice, Next, SkillPack, Item, CombatDeckSpell, CardView, AcceptRewardButton, SkillPackExit};
 
 pub struct InteractivePlugin;
 
@@ -25,20 +25,21 @@ impl Plugin for InteractivePlugin {
             )
             .add_system_set(
                 SystemSet::on_update(World)
-                    .with_system(move_dice)
-                    .with_system(back_pack)
-                    .with_system(skill_pack)
+                    .with_system(move_dice_button)
+                    .with_system(back_pack_button)
+                    .with_system(skill_pack_button)
                     .with_system(next_button)
+                    .with_system(accept_reward_button)
             )
             .add_system_set(
                 SystemSet::on_update(BagPack)
                     .with_system(item)
-                    .with_system(back_pack_exit)
+                    .with_system(back_pack_exit_button)
             )
             .add_system_set(
                 SystemSet::on_update(Deck)
-                    .with_system(back_pack_exit)
                     .with_system(spell)
+                    .with_system(skill_pack_exit_button)
             );
     }
 }
@@ -150,7 +151,7 @@ fn mana_dice(
     combat_element_event(cursor_state, item_position, WHITE, buttons, selected_query);
 }
 
-fn move_dice(
+fn move_dice_button(
     cursor_state: Res<CursorState>,
     mut item_position:
     Query<(&Transform, &mut TextureAtlasSprite, &MoveDice), (With<Interactive>, With<MoveDice>)>,
@@ -160,7 +161,7 @@ fn move_dice(
     combat_element_event(cursor_state, item_position, WHITE, buttons, selected_query);
 }
 
-fn back_pack(
+fn back_pack_button(
     cursor_state: Res<CursorState>,
     mut item_position:
     Query<(&Transform, &mut TextureAtlasSprite, &Backpack), (With<Interactive>, With<Backpack>)>,
@@ -170,17 +171,37 @@ fn back_pack(
     combat_element_event(cursor_state, item_position, WHITE, buttons, selected_query);
 }
 
-fn back_pack_exit(
+fn back_pack_exit_button(
     cursor_state: Res<CursorState>,
     mut item_position:
-    Query<(&Transform, &mut TextureAtlasSprite, &Exit), (With<Interactive>, With<Exit>)>,
+    Query<(&Transform, &mut TextureAtlasSprite, &BagExit), (With<Interactive>, With<BagExit>)>,
     buttons: ResMut<Input<MouseButton>>,
-    mut selected_query: Query<&mut Selected, With<Exit>>,
+    mut selected_query: Query<&mut Selected, With<BagExit>>,
 ) {
     combat_element_event(cursor_state, item_position, WHITE, buttons, selected_query);
 }
 
-fn skill_pack(
+fn skill_pack_exit_button(
+    cursor_state: Res<CursorState>,
+    mut item_position:
+    Query<(&Transform, &mut TextureAtlasSprite, &SkillPackExit), (With<Interactive>, With<SkillPackExit>)>,
+    buttons: ResMut<Input<MouseButton>>,
+    mut selected_query: Query<&mut Selected, With<SkillPackExit>>,
+) {
+    combat_element_event(cursor_state, item_position, WHITE, buttons, selected_query);
+}
+
+fn accept_reward_button(
+    cursor_state: Res<CursorState>,
+    mut item_position:
+    Query<(&Transform, &mut TextureAtlasSprite, &AcceptRewardButton), (With<Interactive>, With<AcceptRewardButton>)>,
+    buttons: ResMut<Input<MouseButton>>,
+    mut selected_query: Query<&mut Selected, With<AcceptRewardButton>>,
+) {
+    combat_element_event(cursor_state, item_position, WHITE, buttons, selected_query);
+}
+
+fn skill_pack_button(
     cursor_state: Res<CursorState>,
     mut item_position:
     Query<(&Transform, &mut TextureAtlasSprite, &SkillPack), (With<Interactive>, With<SkillPack>)>,
@@ -298,6 +319,7 @@ fn combat_element_event<T: Component>(
             }
         } else {
             sprite.color = base_element_color;
+            selected.selected = false
         }
     }
 }

@@ -52,7 +52,6 @@ impl GraphicsPlugin {
         let demon_atlas_handle = texture_atlases.add(demon_atlas);
 
 
-
         let warlock_skills_image = assets.load("skills/warlock_skills.png");
         let warlock_skills_atlas = TextureAtlas::from_grid(warlock_skills_image, Vec2::new(256.0, 256.0), 4, 4);
         let warlock_card_handle = texture_atlases.add(warlock_skills_atlas);
@@ -110,7 +109,7 @@ impl GraphicsPlugin {
             medusa_handle: medusa_atlas_handle,
             medusa_attack: [0, 1, 2, 3, 4, 5],
             medusa_death: [6, 7, 8, 9, 10, 11],
-            medusa_hurt: [12 ,13],
+            medusa_hurt: [12, 13],
             medusa_idle: [14, 15, 16],
 
             small_dragon_handle: small_dragon_atlas_handle,
@@ -122,7 +121,7 @@ impl GraphicsPlugin {
             gin_handle: gin_atlas_handle,
             gin_attack: [0, 1, 2, 3],
             gin_death: [4, 5, 6, 7, 8, 9],
-            gin_hurt: [10 ,11],
+            gin_hurt: [10, 11],
             gin_idle: [12, 13, 14],
 
             big_dragon_handle: big_dragon_atlas_handle,
@@ -134,9 +133,8 @@ impl GraphicsPlugin {
             demon_handle: demon_atlas_handle,
             demon_attack: [0, 1, 2, 3],
             demon_death: [4, 5, 6, 7, 8, 9],
-            demon_hurt: [10 ,11],
+            demon_hurt: [10, 11],
             demon_idle: [12, 13, 14],
-
 
             hero_idle_atlas_handle,
             hero_idle: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
@@ -190,7 +188,6 @@ pub fn spawn_enemy_sprite(
     frame_sheet: &FramesSheet,
     enemy_type: EnemyType,
 ) -> Entity {
-
     let mut sprite = match enemy_type {
         EnemyType::Lizard => TextureAtlasSprite::new(frame_sheet.lizard_idle[0]),
         EnemyType::Medusa => TextureAtlasSprite::new(frame_sheet.medusa_idle[0]),
@@ -415,6 +412,80 @@ pub fn spawn_combat_button(
         .insert(Name::new(name))
         .id()
 }
+
+pub fn spawn_reward_button(
+    commands: &mut Commands,
+    reward: &Reward,
+    texture_storage: &TextureStorage,
+    transform: Transform,
+    component: impl Component,
+) -> Entity {
+
+    let sprite = TextureAtlasSprite {
+        custom_size: Some(Vec2::new(1., 1.)),
+        index: reward.sprite_index.unwrap(),
+        ..default()
+    };
+
+    let texture_atlas = match reward.entity_type {
+        EntityType::SkillCard => texture_storage.warlock_card_handle.clone(),
+        _ => texture_storage.items_atlas_handle.clone(),
+    };
+
+    commands
+        .spawn_bundle(SpriteSheetBundle {
+            sprite,
+            texture_atlas,
+            transform,
+            ..default()
+        })
+        .insert(GlobalTransform::default())
+        .insert(Interactive::default())
+        .insert(Selected::default())
+        .insert(component)
+        .insert(Name::new("Reward"))
+        .id()
+}
+
+// pub fn spawn_reward_button(
+//     mut commands: &mut Commands,
+//     texture_storage: &TextureStorage,
+//     template_storage: &TemplateStorage,
+//     transform: Transform,
+//     component: impl Component,
+//     name: &'static str,
+//     id: usize
+// ) -> Entity {
+//
+//
+//     let sprite = if is_attack {
+//         TextureAtlasSprite {
+//             custom_size: Some(Vec2::new(1., 1.)),
+//             index: 0,
+//             ..default()
+//         }
+//     } else {
+//         TextureAtlasSprite {
+//             custom_size: Some(Vec2::new(1., 1.)),
+//             index: 1,
+//             ..default()
+//         }
+//     };
+//
+//     commands
+//         .spawn_bundle(SpriteSheetBundle {
+//             sprite,
+//             texture_atlas: texture_storage.combat_icon_atlas_handle.clone(),
+//             transform,
+//             ..default()
+//         })
+//         .insert(GlobalTransform::default())
+//         .insert(Interactive::default())
+//         .insert(Selected::default())
+//         .insert(component)
+//         .insert(Name::new(name))
+//         .id()
+// }
 
 
 pub fn spawn_combat_battleground(
@@ -922,7 +993,7 @@ pub fn spawn_tile(
             commands.entity(tile)
                 .insert(Name::new("Collider"))
                 .insert(TileCollider);
-        },
+        }
         'm' | 'M' | 'd' | 'j' | 's' | 'S' | 'p' | 'D' => {
             commands.entity(tile)
                 .insert(EncounterSpawner)
@@ -931,62 +1002,62 @@ pub fn spawn_tile(
                 )
                 .insert(Name::new("EncounterPoint"))
                 .insert(Point(transform.clone()));
-        },
+        }
         'c' => {
             commands.entity(tile)
                 .insert(WorldEventMarker)
                 .insert(WorldEvent {
                     event_type: WorldEventType::Camp,
                     lvl: 1,
-                    is_visited: false
+                    is_visited: false,
                 })
                 .insert(Name::new("Small camp"))
                 .insert(Point(transform.clone()));
-        },
+        }
         'C' => {
             commands.entity(tile)
                 .insert(WorldEventMarker)
                 .insert(WorldEvent {
                     event_type: WorldEventType::Camp,
                     lvl: 2,
-                    is_visited: false
+                    is_visited: false,
                 })
                 .insert(Name::new("Middle camp"))
                 .insert(Point(transform.clone()));
-        },
+        }
         '(' => {
             commands.entity(tile)
                 .insert(WorldEventMarker)
                 .insert(WorldEvent {
                     event_type: WorldEventType::Camp,
                     lvl: 3,
-                    is_visited: false
+                    is_visited: false,
                 })
                 .insert(Name::new("Big camp"))
                 .insert(Point(transform.clone()));
-        },
+        }
         'r' => {
             commands.entity(tile)
                 .insert(WorldEventMarker)
                 .insert(WorldEvent {
                     event_type: WorldEventType::Ruins,
-                    lvl: 2,
-                    is_visited: false
+                    lvl: 0,
+                    is_visited: false,
                 })
                 .insert(Name::new("Ruins"))
                 .insert(Point(transform.clone()));
-        },
+        }
         'a' => {
             commands.entity(tile)
                 .insert(WorldEventMarker)
                 .insert(WorldEvent {
                     event_type: WorldEventType::Altar,
-                    lvl: 1,
-                    is_visited: false
+                    lvl: 0,
+                    is_visited: false,
                 })
                 .insert(Name::new("Altar"))
                 .insert(Point(transform.clone()));
-        },
+        }
         _ => {
             commands.entity(tile)
                 .insert(Name::new("Point"))
@@ -1006,25 +1077,35 @@ pub struct FramesSheet {
     pub lizard_death: [usize; 6],
 
     pub medusa_handle: Handle<TextureAtlas>,
-    pub medusa_idle: [usize; 3],//14 15 16
-    pub medusa_attack: [usize; 6],//0 1 2 3 4 5
-    pub medusa_hurt: [usize; 2], //12 13
+    pub medusa_idle: [usize; 3],
+    //14 15 16
+    pub medusa_attack: [usize; 6],
+    //0 1 2 3 4 5
+    pub medusa_hurt: [usize; 2],
+    //12 13
     pub medusa_death: [usize; 6], // 6 7 8 9 10 11
 
     pub small_dragon_handle: Handle<TextureAtlas>,
-    pub small_dragon_attack: [usize; 3], //0 1 2
-    pub small_dragon_death: [usize; 4], //3 4 5 6
-    pub small_dragon_hurt: [usize; 2], // 7 8
+    pub small_dragon_attack: [usize; 3],
+    //0 1 2
+    pub small_dragon_death: [usize; 4],
+    //3 4 5 6
+    pub small_dragon_hurt: [usize; 2],
+    // 7 8
     pub small_dragon_idle: [usize; 3], //9 10 11
 
     pub gin_handle: Handle<TextureAtlas>,
-    pub gin_attack: [usize; 4], //0 1 2 3
-    pub gin_death: [usize; 6], // 4 5 6 7 8 9
-    pub gin_hurt: [usize; 2], //10 11
-    pub gin_idle: [usize; 3] ,// 12 13 14
+    pub gin_attack: [usize; 4],
+    //0 1 2 3
+    pub gin_death: [usize; 6],
+    // 4 5 6 7 8 9
+    pub gin_hurt: [usize; 2],
+    //10 11
+    pub gin_idle: [usize; 3],// 12 13 14
 
     pub big_dragon_handle: Handle<TextureAtlas>,
-    pub big_dragon_attack: [usize; 4],// 0 1 2 3
+    pub big_dragon_attack: [usize; 4],
+    // 0 1 2 3
     pub big_dragon_death: [usize; 5],
     pub big_dragon_hurt: [usize; 2],
     pub big_dragon_idle: [usize; 3],
@@ -1034,8 +1115,6 @@ pub struct FramesSheet {
     pub demon_death: [usize; 6],
     pub demon_hurt: [usize; 2],
     pub demon_idle: [usize; 3],
-
-
 
     pub hero_idle_atlas_handle: Handle<TextureAtlas>,
     pub hero_idle: [usize; 16],

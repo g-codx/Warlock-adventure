@@ -87,8 +87,8 @@ impl Templates {
 
         let types = self.entities
             .iter()
-            .map(|t| (t.id, t.entity_type.clone()))
-            .collect::<Vec<(usize, EntityType)>>();
+            .map(|t| (t.id, t.entity_type.clone(), t.sprite_index))
+            .collect::<Vec<(usize, EntityType, Option<usize>)>>();
 
         commands.insert_resource(TemplateStorage {
             skill_cards,
@@ -104,7 +104,7 @@ pub struct TemplateStorage {
     pub skill_cards: Vec<Template>,
     pub enemies: Vec<Template>,
     pub items: Vec<Template>,
-    pub types: Vec<(usize, EntityType)>,
+    pub types: Vec<(usize, EntityType, Option<usize>)>,
 }
 
 

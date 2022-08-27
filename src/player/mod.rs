@@ -26,7 +26,8 @@ impl Plugin for PlayerPlugin {
             .add_system_set(
                 SystemSet::on_update(World)
                     .with_system(player_encounter_checking.after(player_movement))
-                    .with_system(player_world_event_checking.after(player_movement))
+                    .with_system(world_object_event.after(player_movement))
+                    .with_system(accept_reward.after(world_object_event))
                     .with_system(player_movement.after(cursor_position))
                     .with_system(move_dice)
                     .with_system(bag_button)
@@ -45,6 +46,7 @@ impl Plugin for PlayerPlugin {
             .add_system_set(
                 SystemSet::on_exit(BagPack)
                     .with_system(despawn_bag_interface)
+                    .with_system(update_stats)
             )
             .add_system_set(
                 SystemSet::on_enter(Deck)
@@ -53,7 +55,7 @@ impl Plugin for PlayerPlugin {
             )
             .add_system_set(
                 SystemSet::on_update(Deck)
-                    .with_system(bag_button_exit)
+                    .with_system(skill_pack_button_exit)
                     .with_system(take_spell)
                     .with_system(remove_spell)
                     .with_system(update_spell_position)

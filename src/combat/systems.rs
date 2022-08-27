@@ -1,15 +1,24 @@
-use crate::combat::components::{AttackButton, AttackDice, AttackText, CombatManager, CombatState, CombatStats, DefenseText, Enemy, EnemyMarker, FightEvent, HealthText, HeroSpellButton, ManaDice, ManaText, PlayerMarker, RoundText, Selected};
-use crate::combat::components::CombatState::{EnemyAttack, EnemyTurn, Finalize, PlayerAttack, PlayerTurn};
-use crate::combat::components::{EnemyType::Lizard, EnemyType::Medusa, EnemyType::Gin, EnemyType::SmallDragon, EnemyType::BigDragon, EnemyType::Demon};
+use crate::combat::components::{
+    AttackButton, AttackDice, AttackText, CombatManager, CombatState, CombatStats, DefenseText,
+    Enemy, EnemyMarker, FightEvent, HealthText, HeroSpellButton, ManaDice, ManaText,PlayerMarker,
+    RoundText, Selected
+};
+use crate::combat::components::CombatState::{
+    EnemyAttack, EnemyTurn, Finalize, PlayerAttack, PlayerTurn
+};
+use crate::combat::components::{
+    EnemyType::Lizard, EnemyType::Medusa, EnemyType::Gin, EnemyType::SmallDragon,
+    EnemyType::BigDragon, EnemyType::Demon
+};
 use crate::CombatState::{End, EnemyDeath};
-use crate::Element::SkillPack;
 use crate::GameState;
-use crate::KeyCode::Space;
 use crate::player::{Card, collide_check, EncounterTracker, Player};
 use crate::prelude::*;
 
+
+
 pub fn init_manager(
-    player_stats_query: Query<(&CombatStats), With<Player>>,
+    player_stats_query: Query<&CombatStats, With<Player>>,
     mut manager: ResMut<CombatManager>,
 ) {
     let player_stats = player_stats_query.single();
@@ -17,14 +26,14 @@ pub fn init_manager(
     manager.permanent_defense_buff = player_stats.defense;
     manager.defense = manager.permanent_defense_buff;
     manager.damage = player_stats.attack;
+    manager.permanent_mana_buff = player_stats.mana;
+    manager.mana_poll = manager.permanent_mana_buff;
 }
-
 
 pub fn finalize(
     mut manager: ResMut<CombatManager>,
     mut combat_state: ResMut<State<CombatState>>,
 ) {
-    println!("FINALIZE");
     manager.damage = manager.permanent_damage_buff;
     manager.mana_poll = manager.permanent_mana_buff;
     manager.defense = manager.permanent_defense_buff;
@@ -54,7 +63,6 @@ pub fn manager_default(mut manager: ResMut<CombatManager>) {
     manager.enemy_death = false;
     manager.enemy_lvl = 0;
 }
-
 
 pub fn use_card(
     mut selected_query: Query<(&mut Card, &Selected, &Children)>,
@@ -131,28 +139,28 @@ pub fn use_card(
 
 
 pub fn update_mana_poll_text(
-    mut text_query: Query<(&mut Text), (With<ManaText>, Without<EnemyMarker>)>,
+    text_query: Query<&mut Text, (With<ManaText>, Without<EnemyMarker>)>,
     manager: Res<CombatManager>,
 ) {
     update_text(text_query, manager.mana_poll);
 }
 
 pub fn update_damage_text(
-    mut text_query: Query<(&mut Text), (With<AttackText>, Without<EnemyMarker>)>,
+    text_query: Query<&mut Text, (With<AttackText>, Without<EnemyMarker>)>,
     manager: Res<CombatManager>,
 ) {
     update_text(text_query, manager.damage);
 }
 
 pub fn update_defense_text(
-    mut text_query: Query<(&mut Text), (With<DefenseText>, Without<EnemyMarker>)>,
+    text_query: Query<&mut Text, (With<DefenseText>, Without<EnemyMarker>)>,
     manager: Res<CombatManager>,
 ) {
     update_text(text_query, manager.defense);
 }
 
 pub fn update_health_text(
-    mut text_query: Query<(&mut Text), (With<HealthText>, Without<EnemyMarker>)>,
+    text_query: Query<&mut Text, (With<HealthText>, Without<EnemyMarker>)>,
     player_query: Query<&CombatStats, With<Player>>,
 ) {
     let player_hp = player_query.single().health;
@@ -160,31 +168,31 @@ pub fn update_health_text(
 }
 
 pub fn update_round_text(
-    mut text_query: Query<(&mut Text), (With<RoundText>, Without<EnemyMarker>)>,
+    text_query: Query<&mut Text, (With<RoundText>, Without<EnemyMarker>)>,
     manager: Res<CombatManager>,
 ) {
     update_text(text_query, manager.round as isize);
 }
 
 pub fn update_enemy_health_text(
-    mut text_query: Query<(&mut Text), (With<HealthText>, Without<PlayerMarker>)>,
+    text_query: Query<&mut Text, (With<HealthText>, Without<PlayerMarker>)>,
     enemy_query: Query<&CombatStats, With<Enemy>>,
 ) {
     let enemy_hp = enemy_query.single().health;
     update_text(text_query, enemy_hp);
 }
 
-pub fn update_attack_dice_sprite(mut dice_query: Query<(&mut TextureAtlasSprite), With<AttackDice>>) {
+pub fn update_attack_dice_sprite(dice_query: Query<&mut TextureAtlasSprite, With<AttackDice>>) {
     update_dice_sprite(dice_query, true);
 }
 
-pub fn update_mana_dice_sprite(mut dice_query: Query<(&mut TextureAtlasSprite), With<ManaDice>>) {
+pub fn update_mana_dice_sprite(dice_query: Query<&mut TextureAtlasSprite, With<ManaDice>>) {
     update_dice_sprite(dice_query, false);
 }
 
 
 pub fn update_dice_sprite<T: Component>(
-    mut dice_query: Query<(&mut TextureAtlasSprite), With<T>>,
+    mut dice_query: Query<&mut TextureAtlasSprite, With<T>>,
     is_attack: bool,
 ) {
     let mut dice_sprite = dice_query.single_mut();
@@ -193,7 +201,7 @@ pub fn update_dice_sprite<T: Component>(
 
 
 pub fn update_text<T: Component, M: Component>(
-    mut text_query: Query<(&mut Text), (With<T>, Without<M>)>,
+    mut text_query: Query<&mut Text, (With<T>, Without<M>)>,
     value: isize,
 ) {
     let mut text = text_query.single_mut();
@@ -207,7 +215,7 @@ pub fn update_text<T: Component, M: Component>(
 pub fn attack_dice_roll(
     mut selected_query: Query<(&Selected, &mut TextureAtlasSprite), With<AttackDice>>,
     mut manager: ResMut<CombatManager>,
-    mut text_query: Query<(&mut Text), (With<AttackText>, Without<EnemyMarker>)>,
+    text_query: Query<&mut Text, (With<AttackText>, Without<EnemyMarker>)>,
 ) {
     let (selected, mut atlas) = selected_query.single_mut();
 
@@ -225,7 +233,7 @@ pub fn attack_dice_roll(
 pub fn mana_dice_roll(
     mut selected_query: Query<(&Selected, &mut TextureAtlasSprite), With<ManaDice>>,
     mut manager: ResMut<CombatManager>,
-    mut text_query: Query<(&mut Text), (With<ManaText>, Without<EnemyMarker>)>,
+    text_query: Query<&mut Text, (With<ManaText>, Without<EnemyMarker>)>,
 ) {
     let (selected, mut atlas) = selected_query.single_mut();
 
@@ -242,11 +250,11 @@ pub fn mana_dice_roll(
 
 pub fn attack_button(
     selected_query: Query<&Selected, With<AttackButton>>,
-    mut manager: ResMut<CombatManager>,
+    manager: ResMut<CombatManager>,
     mut fight_event: EventWriter<FightEvent>,
     enemy_query: Query<Entity, With<Enemy>>,
 ) {
-    let mut selected = selected_query.single().selected;
+    let selected = selected_query.single().selected;
     let enemy = enemy_query.single();
 
     if selected && !manager.can_roll_attack && !manager.skip_round {
@@ -266,7 +274,7 @@ pub fn skip_button(
     mut combat_state: ResMut<State<CombatState>>,
     time: Res<Time>,
 ) {
-    let mut selected = selected_query.single().selected;
+    let selected = selected_query.single().selected;
 
     if selected && !manager.can_roll_attack && !manager.skip_round {
         manager.permanent_mana_buff += 1;
@@ -332,30 +340,23 @@ pub fn damage_calculation(
 
 
 pub fn combat_end_button(
-    mut player_transform_query: Query<&mut Transform, With<Player>>,
-    mut manager: ResMut<CombatManager>,
-    selected_query: Query<&Selected, With<CombatEndButton>>,
+    manager: ResMut<CombatManager>,
     mut state: ResMut<State<GameState>>,
-    mut items: ResMut<ItemPull>,
-    mut player_query: Query<&mut Player>,
-    template_storage: Res<TemplateStorage>,
+    selected_query: Query<&Selected, With<CombatEndButton>>,
+    mut player_transform_query: Query<&mut Transform, With<Player>>,
     mut encounter_query: Query<(&Transform, &mut EncounterType), (With<EncounterSpawner>, Without<Player>)>,
 ) {
-
     if state.current() == &World || state.current() == &BagPack || state.current() == &Deck {
         return;
     }
 
-    let mut selected = selected_query.single().selected;
+    let selected = selected_query.single().selected;
     let mut pl_transform = player_transform_query.single_mut();
-    let mut player = player_query.single_mut();
 
     if selected && manager.enemy_death {
-        add_item(&template_storage, &mut player, manager.enemy_lvl, &mut items);
         for (transform, mut enc_type) in encounter_query.iter_mut()  {
             if collide_check(transform.translation, pl_transform.translation) {
                 enc_type.1 = true;
-                println!("visit true");
             }
         }
         state.set(World).expect("fail state");
@@ -365,31 +366,49 @@ pub fn combat_end_button(
         pl_transform.translation = Vec3::new(6., -3., 500.);
         state.set(World).expect("fail state");
     }
-
-
 }
-
 
 pub fn end_combat(
     mut commands: Commands,
-    mut manager: ResMut<CombatManager>,
+    mut items: ResMut<ItemPull>,
+    manager: ResMut<CombatManager>,
+    mut player_query: Query<&mut Player>,
     texture_storage: Res<TextureStorage>,
+    template_storage: Res<TemplateStorage>,
 ) {
-    println!("END");
+    let mut player = player_query.single_mut();
+    let text = if manager.enemy_death { "Get reward" } else { "Respawn" };
 
-    let mut sprites = Vec::with_capacity(3);
-
-    sprites.push(
-        spawn_background_element(
-            &mut commands,
-            &texture_storage,
-            Some(Vec2::new(5., 3.)),
-            Transform::from_xyz(-1., 1., 700.),
-            "End window",
-        )
+    let text_ent = spawn_text(
+        &mut commands,
+        &texture_storage,
+        Transform {
+            translation: Vec3::new(-1., 1.5, 800.0),
+            scale: Vec3::new(0.01, 0.01, 0.),
+            ..default()
+        },
+        text.to_string(),
+        "Combat end text".to_string(),
+        CombatEndButton,
+        PlayerMarker,
     );
 
-    sprites.push(
+    let button = if manager.enemy_death {
+        if let Some(reward) = get_reward_template(
+            &template_storage, manager.enemy_lvl, &mut items,
+        ) {
+            add_reward(&reward, &mut player);
+            spawn_reward_button(
+                &mut commands,
+                &reward,
+                &texture_storage,
+                Transform::from_xyz(-1., 0.5, 800.),
+                CombatEndButton
+            )
+        } else {
+            panic!("Error in the reward template");
+        }
+    } else {
         spawn_combat_button(
             &mut commands,
             &texture_storage,
@@ -398,25 +417,17 @@ pub fn end_combat(
             CombatEndButton,
             "End button",
         )
+    };
+
+    let background = spawn_background_element(
+        &mut commands,
+        &texture_storage,
+        Some(Vec2::new(5., 3.)),
+        Transform::from_xyz(-1., 1., 700.),
+        "End window",
     );
 
-    let text = if manager.enemy_death { "Get reward" } else { "Respawn" };
-
-    sprites.push(
-        spawn_text(
-            &mut commands,
-            &texture_storage,
-            Transform {
-                translation: Vec3::new(-1., 1.5, 800.0),
-                scale: Vec3::new(0.01, 0.01, 0.),
-                ..default()
-            },
-            text.to_string(),
-            "Combat end text".to_string(),
-            CombatEndButton,
-            PlayerMarker,
-        )
-    );
+    let sprites = vec![text_ent, button, background];
 
     let _ = commands
         .spawn()
@@ -443,13 +454,12 @@ pub fn enemy_turn(
     });
 }
 
-
 pub fn enemy_attack_effect(
     mut enemy_frame_query: Query<(&mut FrameAnimation, &mut EncounterTracker), With<Enemy>>,
     mut combat_state: ResMut<State<CombatState>>,
     frame_sheet: ResMut<FramesSheet>,
     time: Res<Time>,
-    mut manager: ResMut<CombatManager>,
+    manager: ResMut<CombatManager>,
     enemy_query: Query<&Enemy>,
 ) {
     let enemy_type = enemy_query.single().enemy_type;
@@ -553,7 +563,6 @@ pub fn set_starting_state(mut state: ResMut<State<CombatState>>) {
     let _ = state.set(PlayerTurn);
 }
 
-
 pub fn combat_camera(mut camera_query: Query<&mut Transform, With<Camera>>) {
     let mut camera_transform = camera_query.single_mut();
     camera_transform.translation.x = 0.0;
@@ -579,7 +588,7 @@ pub fn despawn_top_items(
 }
 
 pub fn despawn_enemy(mut commands: Commands, enemy_query: Query<Entity, With<Enemy>>) {
-    for (entity) in enemy_query.iter() {
+    for entity in enemy_query.iter() {
         commands.entity(entity).despawn_recursive();
     }
 }
@@ -587,7 +596,7 @@ pub fn despawn_enemy(mut commands: Commands, enemy_query: Query<Entity, With<Ene
 pub fn despawn_player_text(
     mut commands: Commands, enemy_query: Query<Entity, With<PlayerMarker>>,
 ) {
-    for (entity) in enemy_query.iter() {
+    for entity in enemy_query.iter() {
         commands.entity(entity).despawn_recursive();
     }
 }
@@ -595,7 +604,7 @@ pub fn despawn_player_text(
 pub fn despawn_battleground(
     mut commands: Commands, enemy_query: Query<Entity, With<Battleground>>,
 ) {
-    for (entity) in enemy_query.iter() {
+    for entity in enemy_query.iter() {
         commands.entity(entity).despawn_recursive();
     }
 }
@@ -702,6 +711,7 @@ pub fn spawn_enemy(
                 attack: enemy_stats.attack.unwrap() as isize,
                 defense: enemy_stats.defense.unwrap() as isize,
                 max_health: enemy_stats.health.unwrap() as isize,
+                mana: 0
             })
             .insert(Name::new("Enemy"))
             .insert(EncounterTracker {
@@ -718,7 +728,7 @@ pub fn spawn_interface(
     texture_storage: Res<TextureStorage>,
     player_query: Query<&Player>,
     storage: Res<TemplateStorage>,
-    player_stats_query: Query<(&CombatStats), With<Player>>,
+    player_stats_query: Query<&CombatStats, With<Player>>,
 ) {
     let _bottom = spawn_bottom_bar(
         &mut commands,
@@ -733,42 +743,33 @@ pub fn spawn_interface(
 }
 
 pub fn spawn_top_bar(
-    mut commands: &mut Commands,
+    commands: &mut Commands,
     texture_storage: &TextureStorage,
 ) -> Entity {
-    let mut sprites = Vec::new();
 
-    sprites.push(spawn_background_element(
-        commands,
-        texture_storage,
-        Some(Vec2::new(3., 5.)),
-        Transform::from_xyz(-1., 3., 100.),
-        "Enemy background",
-    ));
-
-    sprites.push(spawn_enemy_border_frame(commands, texture_storage));
-
-    sprites.push(
+    let sprites = vec![
+        spawn_background_element(
+            commands,
+            texture_storage,
+            Some(Vec2::new(3., 5.)),
+            Transform::from_xyz(-1., 3., 100.),
+            "Enemy background",
+        ),
+        spawn_enemy_border_frame(commands, texture_storage),
         spawn_combat_icon(
             commands,
             texture_storage,
             Transform::from_xyz(-1.8, 2.6, 150.),
             2,
             "Enemy attack icon",
-        )
-    );
-
-    sprites.push(
+        ),
         spawn_combat_icon(
             commands,
             texture_storage,
             Transform::from_xyz(-1.8, 2., 150.),
             5,
             "Enemy defense icon",
-        )
-    );
-
-    sprites.push(
+        ),
         spawn_combat_icon(
             commands,
             texture_storage,
@@ -776,7 +777,7 @@ pub fn spawn_top_bar(
             4,
             "Enemy health icon",
         )
-    );
+    ];
 
     commands
         .spawn()
@@ -789,8 +790,8 @@ pub fn spawn_top_bar(
 }
 
 pub fn spawn_player_text(
-    mut commands: &mut Commands,
-    player_stats_query: Query<(&CombatStats), With<Player>>,
+    commands: &mut Commands,
+    player_stats_query: Query<&CombatStats, With<Player>>,
     texture_storage: &Res<TextureStorage>,
 ) -> Entity {
     let player_stats = player_stats_query.single();
@@ -830,7 +831,7 @@ pub fn spawn_player_text(
             scale: Vec3::new(0.01, 0.01, 0.),
             ..default()
         },
-        0.to_string(),
+        player_stats.mana.to_string(),
         "Player mana text".to_string(),
         ManaText,
         PlayerMarker,
@@ -879,11 +880,11 @@ pub fn spawn_player_text(
 }
 
 pub fn spawn_bottom_bar(
-    mut commands: &mut Commands,
+    commands: &mut Commands,
     texture_storage: &Res<TextureStorage>,
     player_query: Query<&Player>,
     template_storage: &TemplateStorage,
-    player_stats_query: Query<(&CombatStats), With<Player>>,
+    player_stats_query: Query<&CombatStats, With<Player>>,
 ) -> Entity {
     let player = player_query.single();
     let mut sprites = Vec::new();

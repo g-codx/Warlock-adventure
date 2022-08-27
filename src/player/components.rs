@@ -16,7 +16,10 @@ pub struct MoveDice {
 pub struct Backpack;
 
 #[derive(Component)]
-pub struct Exit;
+pub struct BagExit;
+
+#[derive(Component)]
+pub struct SkillPackExit;
 
 #[derive(Component)]
 pub struct SkillPack;
@@ -104,7 +107,7 @@ impl Player {
 
 #[derive(Component, Inspectable, Default)]
 pub struct ItemBuild {
-    pub defense: Option<(usize, usize)>,
+    pub defense: Option<(usize, usize)>,//(id, value)
     pub attack: Option<(usize, usize)>,
     pub mana: Option<(usize, usize)>,
     pub health: Option<(usize, usize)>,

@@ -2,7 +2,7 @@ use bevy::sprite::collide_aabb::collide;
 use bevy::utils::HashMap;
 use crate::egui::Ui;
 use crate::player::components::{Backpack, EncounterTracker, MoveDice, Player, SkillPack};
-use crate::player::{Exit, BagInterface, Next, WorldInterface, SkillPackInterface, ItemView, Item, ItemBuild, CardView, CombatDeckSpell, UpdateEvent};
+use crate::player::{BagExit, BagInterface, Next, WorldInterface, SkillPackInterface, ItemView, Item, ItemBuild, CardView, CombatDeckSpell, UpdateEvent, SkillPackExit};
 use crate::prelude::*;
 
 
@@ -29,7 +29,18 @@ pub fn skill_pack_button(
 }
 
 pub fn bag_button_exit(
-    selected_query: Query<&Selected, With<Exit>>,
+    selected_query: Query<&Selected, With<BagExit>>,
+    mut state: ResMut<State<GameState>>,
+) {
+    let selected = selected_query.single();
+    if selected.selected {
+        println!("exit selected");
+        state.set(World).expect("Failed to change states");
+    }
+}
+
+pub fn skill_pack_button_exit(
+    selected_query: Query<&Selected, With<SkillPackExit>>,
     mut state: ResMut<State<GameState>>,
 ) {
     let selected = selected_query.single();
@@ -55,7 +66,7 @@ pub fn take_spell(
 }
 
 pub fn remove_spell(
-    mut selected_query: Query<(&mut CardView, &Selected),(With<CombatDeckSpell>)>,
+    mut selected_query: Query<(&mut CardView, &Selected), (With<CombatDeckSpell>)>,
     mut player_query: Query<&mut Player>,
     mut update_event: EventWriter<UpdateEvent>,
 ) {
@@ -76,7 +87,7 @@ pub fn update_spell_position(
     template_storage: Res<TemplateStorage>,
     mut update_event: EventReader<UpdateEvent>,
     mut bag_interface_query: Query<Entity, With<BagInterface>>,
-    combat_deck_spells_query: Query<Entity, With<CombatDeckSpell>>
+    combat_deck_spells_query: Query<Entity, With<CombatDeckSpell>>,
 ) {
     let mut sprites = Vec::with_capacity(5);
     let mut player = player_query.single_mut();
@@ -112,7 +123,7 @@ pub fn update_spell_position(
                             &p,
                             &template_storage,
                             c.id,
-                            true
+                            true,
                         )
                     )
                 });
@@ -209,6 +220,27 @@ pub fn despawn_bag_interface(
     }
 }
 
+
+pub fn update_stats(
+    mut player_stats_query: Query<&mut CombatStats, With<Player>>,
+    player_query: Query<&Player>
+) {
+    let mut stats = player_stats_query.single_mut();
+    let player = player_query.single();
+    if let Some(defense) = player.item_build.defense {
+        stats.defense += defense.1 as isize;
+    }
+    if let Some(attack) = player.item_build.attack {
+        stats.attack += attack.1 as isize;
+    }
+    if let Some(mana) = player.item_build.mana {
+        stats.mana += mana.1 as isize;
+    }
+    if let Some(health) = player.item_build.health {
+        stats.max_health += health.1 as isize;
+    }
+}
+
 pub fn bag_interface_camera(mut camera_query: Query<&mut Transform, With<Camera>>) {
     let mut camera_transform = camera_query.single_mut();
     camera_transform.translation.x = 7.5;
@@ -259,7 +291,7 @@ pub fn spawn_skill_pack_interface(
                     &p,
                     &template_storage,
                     c.id,
-                    false
+                    false,
                 )
             )
         });
@@ -279,7 +311,7 @@ pub fn spawn_skill_pack_interface(
             &mut commands,
             &texture_storage,
             Transform::from_xyz(11., -4.5, 700.),
-            Exit,
+            SkillPackExit,
             Element::Exit,
         )
     );
@@ -324,7 +356,7 @@ pub fn spawn_bag_interface(
             &mut commands,
             &texture_storage,
             Transform::from_xyz(11., -4.5, 700.),
-            Exit,
+            BagExit,
             Element::Exit,
         )
     );
@@ -518,7 +550,7 @@ pub fn player_encounter_checking(
     let player_translation = player_query.single().translation;
 
 
-    for (transform, enc_type) in encounter_query.iter()  {
+    for (transform, enc_type) in encounter_query.iter() {
         if collide_check(transform.translation, player_translation) && !enc_type.1 {
             println!("Changing to Combat");
             encounter_event.send(EncounterEvent(enc_type.0));
@@ -527,33 +559,114 @@ pub fn player_encounter_checking(
     }
 }
 
+#[derive(Component)]
+pub struct WorldReward;
 
-pub fn player_world_event_checking(
-    player_transform_query: Query<&Transform, With<Player>>,
-    mut player_query: Query<&mut Player>,
-    mut event_query: Query<(&Transform, &mut WorldEvent), (With<WorldEventMarker>, Without<Player>)>,
-    mut items: ResMut<ItemPull>,
-    template_storage: Res<TemplateStorage>,
+#[derive(Component)]
+pub struct AcceptRewardButton;
+
+pub fn accept_reward(
+    mut commands: Commands,
+    selected_query: Query<&Selected, With<AcceptRewardButton>>,
+    reward_interface_query: Query<Entity, With<WorldReward>>,
 ) {
-    let player_translation = player_transform_query.single().translation;
-    let mut player = player_query.single_mut();
-
-    for (transform,mut event) in event_query.iter_mut() {
-        if collide_check(transform.translation, player_translation) && !event.is_visited {
-            event.is_visited = true;
-            match event.event_type {
-                WorldEventType::Camp => {
-                    add_item(&template_storage, &mut player, event.lvl, &mut items);
-                },
-                WorldEventType::Ruins => {
-                    add_item(&template_storage, &mut player, 1, &mut items);
-                    add_item(&template_storage, &mut player, 2, &mut items);
-                }
-                WorldEventType::Altar => {}
+    for selected in selected_query.iter() {
+        if selected.selected {
+            for (entity) in reward_interface_query.iter() {
+                commands.entity(entity).despawn_recursive();
             }
         }
     }
+}
 
+
+pub fn world_object_event(
+    mut commands: Commands,
+    mut items: ResMut<ItemPull>,
+    mut player_query: Query<&mut Player>,
+    texture_storage: Res<TextureStorage>,
+    template_storage: Res<TemplateStorage>,
+    mut player_stats_query: Query<(&Transform, &mut CombatStats), With<Player>>,
+    mut event_query: Query<(&Transform, &mut WorldEvent), (With<WorldEventMarker>, Without<Player>)>,
+) {
+    let (player_transform, mut player_stats) = player_stats_query.single_mut();
+    let player_translation= player_transform.translation;
+    let mut player = player_query.single_mut();
+
+    for (transform, mut event) in event_query.iter_mut() {
+        if collide_check(transform.translation, player_translation) && !event.is_visited {
+            event.is_visited = true;
+
+            if let Some(reward) = get_reward_template(&template_storage, event.lvl, &mut items) {
+                match event.event_type {
+                    WorldEventType::Camp => add_reward(&reward, &mut player),
+                    WorldEventType::Ruins => add_reward(&reward, &mut player),
+                    WorldEventType::Altar => {
+                        add_reward(&reward, &mut player);
+                        player_stats.max_health = std::cmp::max(player_stats.max_health - 1, 5_isize);
+                        player_stats.attack += 1;
+                    }
+                }
+
+                let window_translation = Vec3::new(
+                    player_translation.x,
+                    player_translation.y,
+                    player_translation.z + 10.,
+                );
+
+                let text_translation = Vec3::new(
+                    player_translation.x,
+                    player_translation.y + 1.,
+                    player_translation.z + 20.,
+                );
+
+                let sprites = vec![
+                    spawn_reward_button(
+                        &mut commands,
+                        &reward,
+                        &texture_storage,
+                        Transform {
+                            translation: window_translation,
+                            ..default()
+                        },
+                        AcceptRewardButton
+                    ),
+                    spawn_background_element(
+                        &mut commands,
+                        &texture_storage,
+                        Some(Vec2::new(5., 3.)),
+                        Transform {
+                            translation: window_translation,
+                            ..default()
+                        },
+                        "Reward window",
+                    ),
+                    spawn_text(
+                        &mut commands,
+                        &texture_storage,
+                        Transform {
+                            translation: text_translation,
+                            scale: Vec3::new(0.01, 0.01, 0.),
+                            ..default()
+                        },
+                        "Your find".to_string(),
+                        "Accept reward".to_string(),
+                        AcceptRewardButton,
+                        PlayerMarker,
+                    ),
+                ];
+
+                let _ = commands
+                    .spawn()
+                    .insert(Transform::default())
+                    .insert(GlobalTransform::default())
+                    .insert(Name::new("World reward"))
+                    .insert(WorldReward)
+                    .push_children(&sprites)
+                    .id();
+            }
+        }
+    }
 }
 
 pub fn hide_player(
@@ -627,7 +740,7 @@ pub fn player_movement(
     let (pl, mut transform) = player.single_mut();
     let mut move_points = move_points_query.single_mut();
 
-    if buttons.just_pressed(MouseButton::Right)  {
+    if buttons.just_pressed(MouseButton::Right) {
         transform.translation.x = cursor_state.last_right_click.x;
         transform.translation.y = cursor_state.last_right_click.y;
     }
@@ -762,8 +875,9 @@ pub fn spawn_player(
         .insert(CombatStats {
             health: 10,
             defense: 1,
-            attack: 20,
+            attack: 1,
             max_health: 10,
+            mana: 0,
         })
         .insert(EncounterTracker {
             timer: Timer::from_seconds(1.0, true)

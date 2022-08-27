@@ -8,6 +8,7 @@ pub struct CombatStats {
     pub attack: isize,
     pub defense: isize,
     pub max_health: isize,
+    pub mana: isize,
 }
 
 #[derive(Component, Inspectable)]

@@ -15,8 +15,8 @@ impl Plugin for WorldPlugin {
 }
 
 impl WorldPlugin {
-    fn init_item_pull(mut commands: Commands) {
-        ItemPull::new(commands);
+    fn init_item_pull(commands: Commands) {
+        ItemPull::create_item_pull(commands);
     }
 }
 
@@ -46,7 +46,7 @@ pub struct WorldEvent {
 }
 
 impl ItemPull {
-    pub fn new(mut commands: Commands) {
+    pub fn create_item_pull(mut commands: Commands) {
         let mut pull = Self {
             low_lvl: vec![2, 3, 4, 6, 9, 10, 24, 25, 26],//start with 1,5
             middle_lvl: vec![7, 8, 11, 12, 27, 28, 29, 30],
@@ -73,24 +73,43 @@ impl ItemPull {
     }
 }
 
-pub fn add_item(
-    template_storage: &Res<TemplateStorage>,
-    player: &mut Player,
-    lvl: usize,
-    items: &mut ItemPull
-) {
-    if let Some(id) = items.get_item(lvl) {
-        let ent_type = template_storage.types
-            .iter()
-            .filter(|t| t.0 == id)
-            .map(|t| t.1.clone())
-            .next()
-            .unwrap();
-
-        match ent_type {
-            EntityType::SkillCard => player.add_in_deck(id, lvl),
-            EntityType::Item => player.add_in_bag(id, lvl),
-            _ => {}
-        }
+pub fn add_reward(reward: &Reward, player: &mut Player) {
+    match reward.entity_type {
+        EntityType::SkillCard => player.add_in_deck(reward.item_id, reward.item_lvl),
+        EntityType::Item => player.add_in_bag(reward.item_id, reward.item_lvl),
+        _ => {}
     }
+}
+
+pub struct Reward {
+    pub item_id: usize,
+    pub entity_type: EntityType,
+    pub sprite_index: Option<usize>,
+    pub item_lvl: usize
+}
+
+pub fn get_reward_template(
+    template_storage: &Res<TemplateStorage>,
+    mut lvl: usize,
+    items: &mut ItemPull
+) -> Option<Reward> {
+
+    if lvl == 0 {
+        lvl = thread_rng().gen_range(1..=3);
+    }
+
+    let template = if let Some(id) = items.get_item(lvl) {
+        template_storage.types
+            .iter()
+            .find(|t| t.0 == id)
+    } else {
+        None
+    };
+
+    template.map(|template_| Reward {
+            item_id: template_.0,
+            entity_type: template_.1.clone(),
+            sprite_index: template_.2,
+            item_lvl: lvl
+        })
 }

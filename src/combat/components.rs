@@ -1,5 +1,4 @@
-use crate::EnemyType::{BigDragon, Demon, Gin, Lizard, Medusa, SmallDragon};
-use crate::player::Card;
+use crate::EnemyType::*;
 use crate::prelude::*;
 
 #[derive(Component, Inspectable)]
@@ -38,13 +37,10 @@ pub struct CombatManager {
 
 impl CombatManager {
     pub fn if_can_cast(&mut self, mana_cost: usize, is_used: bool) -> bool {
-        println!("{}", is_used);
         if (self.mana_poll - mana_cost as isize >= 0) && !is_used {
-            self.mana_poll = self.mana_poll - mana_cost as isize;
-            println!("SUCCESS! Mana pull = {}", self.mana_poll);
+            self.mana_poll -= mana_cost as isize;
             true
         } else {
-            println!("FAIL! Mana pull = {}, Mana cost = {}", self.mana_poll, mana_cost);
             false
         }
     }
@@ -179,4 +175,3 @@ pub struct TopItems;
 
 #[derive(Component)]
 pub struct Battleground;
-

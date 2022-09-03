@@ -1,14 +1,10 @@
 use std::fs::File;
-use std::ops::Deref;
-use std::thread::spawn;
 use ron::de::from_reader;
 use crate::prelude::*;
 use serde::Deserialize;
 use crate::CardAction::Special;
 use crate::EnemyType::Lizard;
 use crate::EntityType::SkillCard;
-use crate::player;
-use crate::player::{CardView, Item, ItemView};
 
 pub struct TemplatePlugin;
 
@@ -21,7 +17,7 @@ impl Plugin for TemplatePlugin {
 }
 
 impl TemplatePlugin {
-    fn load(mut commands: Commands) {
+    fn load(commands: Commands) {
         Templates::load().shuffle(commands);
     }
 }
@@ -44,7 +40,7 @@ pub struct Template {
     pub defense: Option<usize>,
 }
 
-#[derive(Clone, Deserialize, Debug, PartialEq)]
+#[derive(Clone, Deserialize, Debug, PartialEq, Eq)]
 pub enum EntityType {
     Enemy,
     SkillCard,

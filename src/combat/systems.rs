@@ -1,68 +1,9 @@
-use crate::combat::components::{
-    AttackButton, AttackDice, AttackText, CombatManager, CombatState, CombatStats, DefenseText,
-    Enemy, EnemyMarker, FightEvent, HealthText, HeroSpellButton, ManaDice, ManaText,PlayerMarker,
-    RoundText, Selected
-};
-use crate::combat::components::CombatState::{
-    EnemyAttack, EnemyTurn, Finalize, PlayerAttack, PlayerTurn
-};
-use crate::combat::components::{
-    EnemyType::Lizard, EnemyType::Medusa, EnemyType::Gin, EnemyType::SmallDragon,
-    EnemyType::BigDragon, EnemyType::Demon
-};
-use crate::CombatState::{End, EnemyDeath};
-use crate::GameState;
-use crate::player::{Card, collide_check, EncounterTracker, Player};
+use crate::combat::EnemyType::*;
+use crate::CombatState::*;
+use crate::combat::*;
+use crate::player::*;
 use crate::prelude::*;
 
-
-
-pub fn init_manager(
-    player_stats_query: Query<&CombatStats, With<Player>>,
-    mut manager: ResMut<CombatManager>,
-) {
-    let player_stats = player_stats_query.single();
-    manager.permanent_damage_buff = player_stats.attack;
-    manager.permanent_defense_buff = player_stats.defense;
-    manager.defense = manager.permanent_defense_buff;
-    manager.damage = player_stats.attack;
-    manager.permanent_mana_buff = player_stats.mana;
-    manager.mana_poll = manager.permanent_mana_buff;
-}
-
-pub fn finalize(
-    mut manager: ResMut<CombatManager>,
-    mut combat_state: ResMut<State<CombatState>>,
-) {
-    manager.damage = manager.permanent_damage_buff;
-    manager.mana_poll = manager.permanent_mana_buff;
-    manager.defense = manager.permanent_defense_buff;
-    manager.can_roll_attack = true;
-    manager.can_roll_mana = true;
-    manager.round += 1;
-    manager.skip_round = false;
-    manager.enemy_skip_round = false;
-
-    combat_state.set(PlayerTurn).unwrap();
-    manager.print();
-}
-
-pub fn manager_default(mut manager: ResMut<CombatManager>) {
-    manager.round = 1;
-    manager.damage = 0;
-    manager.mana_poll = 0;
-    manager.defense = 0;
-    manager.permanent_damage_buff = 0;
-    manager.permanent_defense_buff = 0;
-    manager.permanent_mana_buff = 0;
-    manager.can_roll_mana = true;
-    manager.can_roll_attack = true;
-    manager.skip_round = false;
-    manager.enemy_skip_round = false;
-    manager.player_death = false;
-    manager.enemy_death = false;
-    manager.enemy_lvl = 0;
-}
 
 pub fn use_card(
     mut selected_query: Query<(&mut Card, &Selected, &Children)>,
@@ -137,7 +78,6 @@ pub fn use_card(
     }
 }
 
-
 pub fn update_mana_poll_text(
     text_query: Query<&mut Text, (With<ManaText>, Without<EnemyMarker>)>,
     manager: Res<CombatManager>,
@@ -190,7 +130,6 @@ pub fn update_mana_dice_sprite(dice_query: Query<&mut TextureAtlasSprite, With<M
     update_dice_sprite(dice_query, false);
 }
 
-
 pub fn update_dice_sprite<T: Component>(
     mut dice_query: Query<&mut TextureAtlasSprite, With<T>>,
     is_attack: bool,
@@ -198,7 +137,6 @@ pub fn update_dice_sprite<T: Component>(
     let mut dice_sprite = dice_query.single_mut();
     dice_sprite.index = if is_attack { 0 } else { 7 };
 }
-
 
 pub fn update_text<T: Component, M: Component>(
     mut text_query: Query<&mut Text, (With<T>, Without<M>)>,
@@ -210,7 +148,6 @@ pub fn update_text<T: Component, M: Component>(
         s.value = value.to_string();
     });
 }
-
 
 pub fn attack_dice_roll(
     mut selected_query: Query<(&Selected, &mut TextureAtlasSprite), With<AttackDice>>,
@@ -266,7 +203,6 @@ pub fn attack_button(
         });
     }
 }
-
 
 pub fn skip_button(
     selected_query: Query<&Selected, With<HeroSpellButton>>,
@@ -338,7 +274,6 @@ pub fn damage_calculation(
     }
 }
 
-
 pub fn combat_end_button(
     manager: ResMut<CombatManager>,
     mut state: ResMut<State<GameState>>,
@@ -354,7 +289,7 @@ pub fn combat_end_button(
     let mut pl_transform = player_transform_query.single_mut();
 
     if selected && manager.enemy_death {
-        for (transform, mut enc_type) in encounter_query.iter_mut()  {
+        for (transform, mut enc_type) in encounter_query.iter_mut() {
             if collide_check(transform.translation, pl_transform.translation) {
                 enc_type.1 = true;
             }
@@ -403,7 +338,7 @@ pub fn end_combat(
                 &reward,
                 &texture_storage,
                 Transform::from_xyz(-1., 0.5, 800.),
-                CombatEndButton
+                CombatEndButton,
             )
         } else {
             panic!("Error in the reward template");
@@ -703,6 +638,8 @@ pub fn spawn_enemy(
             enemy_type,
         );
 
+        spawn_combat_battleground(&mut commands, &texture_storage, &enemy_type);
+
         commands
             .entity(sprite)
             .insert(Enemy { enemy_type })
@@ -711,7 +648,7 @@ pub fn spawn_enemy(
                 attack: enemy_stats.attack.unwrap() as isize,
                 defense: enemy_stats.defense.unwrap() as isize,
                 max_health: enemy_stats.health.unwrap() as isize,
-                mana: 0
+                mana: 0,
             })
             .insert(Name::new("Enemy"))
             .insert(EncounterTracker {
@@ -729,6 +666,7 @@ pub fn spawn_interface(
     player_query: Query<&Player>,
     storage: Res<TemplateStorage>,
     player_stats_query: Query<&CombatStats, With<Player>>,
+    enemy_query: Query<&Enemy>
 ) {
     let _bottom = spawn_bottom_bar(
         &mut commands,
@@ -739,14 +677,13 @@ pub fn spawn_interface(
     );
 
     let _top = spawn_top_bar(&mut commands, &texture_storage);
-    let _battleground = spawn_combat_battleground(&mut commands, &texture_storage);
+    // let _battleground = spawn_combat_battleground(&mut commands, &texture_storage, enemy_query);
 }
 
 pub fn spawn_top_bar(
     commands: &mut Commands,
     texture_storage: &TextureStorage,
 ) -> Entity {
-
     let sprites = vec![
         spawn_background_element(
             commands,
@@ -776,7 +713,7 @@ pub fn spawn_top_bar(
             Transform::from_xyz(-1.8, 1.4, 150.),
             4,
             "Enemy health icon",
-        )
+        ),
     ];
 
     commands
@@ -1045,4 +982,51 @@ pub fn spawn_bottom_bar(
         .insert(Name::new("Bottom Items"))
         .push_children(&sprites)
         .id()
+}
+
+pub fn init_manager(
+    player_stats_query: Query<&CombatStats, With<Player>>,
+    mut manager: ResMut<CombatManager>,
+) {
+    let player_stats = player_stats_query.single();
+    manager.permanent_damage_buff = player_stats.attack;
+    manager.permanent_defense_buff = player_stats.defense;
+    manager.defense = manager.permanent_defense_buff;
+    manager.damage = player_stats.attack;
+    manager.permanent_mana_buff = player_stats.mana;
+    manager.mana_poll = manager.permanent_mana_buff;
+}
+
+pub fn finalize(
+    mut manager: ResMut<CombatManager>,
+    mut combat_state: ResMut<State<CombatState>>,
+) {
+    manager.damage = manager.permanent_damage_buff;
+    manager.mana_poll = manager.permanent_mana_buff;
+    manager.defense = manager.permanent_defense_buff;
+    manager.can_roll_attack = true;
+    manager.can_roll_mana = true;
+    manager.round += 1;
+    manager.skip_round = false;
+    manager.enemy_skip_round = false;
+
+    combat_state.set(PlayerTurn).unwrap();
+    manager.print();
+}
+
+pub fn manager_default(mut manager: ResMut<CombatManager>) {
+    manager.round = 1;
+    manager.damage = 0;
+    manager.mana_poll = 0;
+    manager.defense = 0;
+    manager.permanent_damage_buff = 0;
+    manager.permanent_defense_buff = 0;
+    manager.permanent_mana_buff = 0;
+    manager.can_roll_mana = true;
+    manager.can_roll_attack = true;
+    manager.skip_round = false;
+    manager.enemy_skip_round = false;
+    manager.player_death = false;
+    manager.enemy_death = false;
+    manager.enemy_lvl = 0;
 }

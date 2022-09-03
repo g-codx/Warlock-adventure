@@ -3,11 +3,9 @@ mod systems;
 
 use crate::prelude::*;
 pub use crate::combat::components::*;
-pub use crate::combat::components::CombatState::{EnemyAttack, EnemyTurn, Finalize, PlayerAttack, PlayerTurn, PreState};
+pub use crate::combat::components::CombatState::*;
 pub use crate::GameState;
 pub use crate::combat::systems::*;
-use crate::CombatState::End;
-
 
 pub struct CombatPlugin;
 

@@ -198,8 +198,8 @@ Templates(
             entity_type: Enemy,
             level: 1,
             name: "Lizard",
-            health: Some(10),
-            attack: Some(3),
+            health: Some(7),
+            attack: Some(2),
             defense: Some(3)
         ),
         Template(
@@ -207,7 +207,7 @@ Templates(
             entity_type: Enemy,
             level: 1,
             name: "Meduza",
-            health: Some(8),
+            health: Some(7),
             attack: Some(5),
             defense: Some(2)
         ),
@@ -216,7 +216,7 @@ Templates(
             entity_type: Enemy,
             level: 2,
             name: "Small dragon",
-            health: Some(15),
+            health: Some(10),
             attack: Some(3),
             defense: Some(5)
         ),
@@ -225,9 +225,9 @@ Templates(
             entity_type: Enemy,
             level: 2,
             name: "Spirit",
-            health: Some(15),
+            health: Some(10),
             attack: Some(5),
-            defense: Some(3)
+            defense: Some(2)
         ),
         Template(
             id: 19,
@@ -244,7 +244,7 @@ Templates(
             level: 3,
             name: "Demon",
             health: Some(15),
-            attack: Some(7),
+            attack: Some(10),
             defense: Some(5)
         ),
 

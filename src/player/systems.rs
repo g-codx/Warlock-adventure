@@ -3,51 +3,40 @@ use crate::prelude::*;
 use crate::player::components::*;
 
 pub fn player_movement(
-    mut player: Query<(&Player, &mut Transform), With<Player>>,
+    mut player: Query<&mut Transform, With<Player>>,
     wall_query: Query<&Transform, (With<TileCollider>, Without<Player>)>,
-    mut cursor_state: ResMut<CursorState>,
+    cursor_state: ResMut<CursorState>,
     buttons: Res<Input<MouseButton>>,
     mut move_points_query: Query<&mut MoveDice>,
 ) {
-    let (pl, mut transform) = player.single_mut();
+    let mut transform = player.single_mut();
     let mut move_points = move_points_query.single_mut();
 
-    if buttons.just_pressed(MouseButton::Right) {
-        transform.translation.x = cursor_state.last_right_click.x;
-        transform.translation.y = cursor_state.last_right_click.y;
+    if buttons.just_pressed(MouseButton::Right) && move_points.value != 0 {
+        let x_target = cursor_state.last_right_click.x;
+        let y_target = cursor_state.last_right_click.y;
+
+        let x_ = (transform.translation.x - x_target).abs();
+        let y_ = (transform.translation.y - y_target).abs();
+
+        if x_ <= 1. && y_ <= 1. {
+            let target = Vec3::new(x_target, y_target, 100.);
+
+            if !wall_query
+                .iter()
+                .any(|&transform|
+                    collide_check(target, transform.translation))
+            {
+                move_points.value = std::cmp::max(
+                    move_points.value - 1,
+                    0,
+                );
+
+                transform.translation.x = cursor_state.last_right_click.x;
+                transform.translation.y = cursor_state.last_right_click.y;
+            }
+        }
     }
-
-
-    // if buttons.just_pressed(MouseButton::Right) && move_points.value != 0 {
-    //     let x_target = cursor_state.last_right_click.x;
-    //     let y_target = cursor_state.last_right_click.y;
-    //
-    //     println!("{}", x_target);
-    //     println!("{}", y_target);
-    //
-    //     let x_ = (transform.translation.x - x_target).abs();
-    //     let y_ = (transform.translation.y - y_target).abs();
-    //
-    //     if x_ <= 1. && y_ <= 1. {
-    //         let target = Vec3::new(x_target, y_target, 100.);
-    //
-    //         if !wall_query
-    //             .iter()
-    //             .any(|&transform|
-    //                 collide_check(target, transform.translation))
-    //         {
-    //             move_points.value = std::cmp::max(
-    //                 move_points.value - 1,
-    //                 0,
-    //             );
-    //
-    //             transform.translation.x = cursor_state.last_right_click.x;
-    //             transform.translation.y = cursor_state.last_right_click.y;
-    //
-    //             println!("{:?}", move_points.value);
-    //         }
-    //     }
-    // }
 }
 
 pub fn player_encounter_checking(
@@ -55,11 +44,14 @@ pub fn player_encounter_checking(
     encounter_query: Query<(&Transform, &EncounterType), (With<EncounterSpawner>, Without<Player>)>,
     mut state: ResMut<State<GameState>>,
     mut encounter_event: EventWriter<EncounterEvent>,
+    mut move_dice_query: Query<&mut MoveDice>
 ) {
     let player_translation = player_query.single().translation;
+    let mut move_dice = move_dice_query.single_mut();
 
     for (transform, enc_type) in encounter_query.iter() {
         if collide_check(transform.translation, player_translation) && !enc_type.1 {
+            move_dice.value = 0_isize;
             encounter_event.send(EncounterEvent(enc_type.0));
             state.set(Combat).expect("Failed to change states");
         }

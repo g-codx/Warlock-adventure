@@ -142,11 +142,15 @@ pub fn update_text<T: Component, M: Component>(
     mut text_query: Query<&mut Text, (With<T>, Without<M>)>,
     value: isize,
 ) {
-    let mut text = text_query.single_mut();
+    // let mut text = text_query.single_mut();
 
-    text.sections.iter_mut().for_each(|mut s| {
-        s.value = value.to_string();
-    });
+    for mut t in text_query.iter_mut() {
+        t.sections.iter_mut().for_each(|mut s| {
+            s.value = value.to_string();
+        });
+    }
+
+
 }
 
 pub fn attack_dice_roll(
@@ -551,8 +555,10 @@ pub fn spawn_enemy(
     template_storage: Res<TemplateStorage>,
     mut encounter_event: EventReader<EncounterEvent>,
     mut manager: ResMut<CombatManager>,
+    next_button_query: Query<&NextButton>
 ) {
     if let Some(event) = encounter_event.iter().next() {
+        let enemy_stat_buff = next_button_query.single().enemy_buff();
         let enemy_type = event.0;
         let enemy_stats = template_storage.get_enemy(enemy_type).unwrap();
 
@@ -561,6 +567,14 @@ pub fn spawn_enemy(
             Gin | SmallDragon => manager.enemy_lvl = 2,
             BigDragon | Demon => manager.enemy_lvl = 3
         }
+
+        let enemy_combat_stats = CombatStats {
+            health: enemy_stats.health.unwrap() as isize + enemy_stat_buff as isize,
+            attack: enemy_stats.attack.unwrap() as isize + enemy_stat_buff as isize,
+            defense: enemy_stats.defense.unwrap() as isize + enemy_stat_buff as isize,
+            max_health: enemy_stats.health.unwrap() as isize + enemy_stat_buff as isize,
+            mana: 0,
+        };
 
         let attack_text_translation = match enemy_type {
             Lizard => Vec3::new(-0.2, -1.4, 205.0),
@@ -597,7 +611,7 @@ pub fn spawn_enemy(
                 scale: Vec3::new(0.01, 0.01, 0.),
                 ..default()
             },
-            enemy_stats.attack.unwrap().to_string(),
+            enemy_combat_stats.attack.to_string(),
             "Enemy attack text".to_string(),
             AttackText,
             EnemyMarker,
@@ -611,7 +625,7 @@ pub fn spawn_enemy(
                 scale: Vec3::new(0.01, 0.01, 0.),
                 ..default()
             },
-            enemy_stats.defense.unwrap().to_string(),
+            enemy_combat_stats.defense.to_string(),
             "Enemy defense text".to_string(),
             DefenseText,
             EnemyMarker,
@@ -625,12 +639,11 @@ pub fn spawn_enemy(
                 scale: Vec3::new(0.01, 0.01, 0.),
                 ..default()
             },
-            enemy_stats.health.unwrap().to_string(),
+            enemy_combat_stats.health.to_string(),
             "Enemy health text".to_string(),
             HealthText,
             EnemyMarker,
         );
-
 
         let sprite = spawn_enemy_sprite(
             &mut commands,
@@ -643,13 +656,7 @@ pub fn spawn_enemy(
         commands
             .entity(sprite)
             .insert(Enemy { enemy_type })
-            .insert(CombatStats {
-                health: enemy_stats.health.unwrap() as isize,
-                attack: enemy_stats.attack.unwrap() as isize,
-                defense: enemy_stats.defense.unwrap() as isize,
-                max_health: enemy_stats.health.unwrap() as isize,
-                mana: 0,
-            })
+            .insert(enemy_combat_stats)
             .insert(Name::new("Enemy"))
             .insert(EncounterTracker {
                 timer: Timer::from_seconds(3.5, true)
@@ -666,8 +673,9 @@ pub fn spawn_interface(
     player_query: Query<&Player>,
     storage: Res<TemplateStorage>,
     player_stats_query: Query<&CombatStats, With<Player>>,
-    enemy_query: Query<&Enemy>
 ) {
+    let _top = spawn_top_bar(&mut commands, &texture_storage);
+
     let _bottom = spawn_bottom_bar(
         &mut commands,
         &texture_storage,
@@ -675,9 +683,6 @@ pub fn spawn_interface(
         &storage,
         player_stats_query,
     );
-
-    let _top = spawn_top_bar(&mut commands, &texture_storage);
-    // let _battleground = spawn_combat_battleground(&mut commands, &texture_storage, enemy_query);
 }
 
 pub fn spawn_top_bar(

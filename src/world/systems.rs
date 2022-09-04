@@ -472,6 +472,27 @@ pub fn spawn_skill_pack_interface(
         )
     );
 
+    sprites.push(
+        spawn_text(
+            &mut commands,
+            &texture_storage,
+            Transform {
+                translation: Vec3::new(15., -8.5, 700.),
+                scale: Vec3::new(0.01, 0.01, 0.),
+                ..default()
+            },
+            "Update your deck before every battle.\n
+            You can take into battle:\n
+            - 3 first level spells\n
+            - 2 second level spells\n
+            - 1 third level spell.\n
+            Mouse right click - cards info".to_string(),
+            "Info text".to_string(),
+            DeckInfoHint,
+            PlayerMarker,
+        )
+    );
+
     update_event.send(UpdateEvent(true));
 
     let _ = commands
@@ -512,6 +533,22 @@ pub fn spawn_bag_interface(
             Transform::from_xyz(11., -4.5, 700.),
             BagExit,
             Element::Exit,
+        )
+    );
+
+    sprites.push(
+        spawn_text(
+            &mut commands,
+            &texture_storage,
+            Transform {
+                translation: Vec3::new(7., -14., 700.),
+                scale: Vec3::new(0.01, 0.01, 0.),
+                ..default()
+            },
+            "Upgrade your items only when you receive new ones".to_string(),
+            "Info text".to_string(),
+            BagInfoHint,
+            PlayerMarker,
         )
     );
 
@@ -614,6 +651,14 @@ pub fn update_move_points_text(
     update_text(text_query,move_points);
 }
 
+pub fn update_days_count_text(
+    text_query: Query<&mut Text, (With<DaysCountText>, Without<EnemyMarker>)>,
+    next_button_query: Query<&NextButton>
+) {
+    let next_button = next_button_query.single().days;
+    update_text(text_query,next_button as isize);
+}
+
 pub fn spawn_world_interface(
     mut commands: Commands,
     texture_storage: Res<TextureStorage>
@@ -647,7 +692,7 @@ pub fn spawn_world_interface(
             &mut commands,
             &texture_storage,
             Transform::from_xyz(15.4, -12., 200.),
-            Next,
+            NextButton {days: 0},
             Element::Next,
         ),
         spawn_background_element(
@@ -668,8 +713,47 @@ pub fn spawn_world_interface(
             "0".to_string(),
             "Move dice text".to_string(),
             MoveDiceText,
-            PlayerMarker
-        )
+            WorldTextMarker
+        ),
+        spawn_text(
+            &mut commands,
+            &texture_storage,
+            Transform {
+                translation: Vec3::new(15.4, -11., 205.),
+                scale: Vec3::new(0.01, 0.01, 0.),
+                ..default()
+            },
+            "0".to_string(),
+            "Days count".to_string(),
+            DaysCountText,
+            WorldTextMarker
+        ),
+        spawn_text(
+            &mut commands,
+            &texture_storage,
+            Transform {
+                translation: Vec3::new(15., -13., 205.),
+                scale: Vec3::new(0.007, 0.007, 0.),
+                ..default()
+            },
+            "Roll the movement cube\nto get points".to_string(),
+            "Move info".to_string(),
+            MoveInfoText,
+            WorldTextMarker
+        ),
+        spawn_text(
+            &mut commands,
+            &texture_storage,
+            Transform {
+                translation: Vec3::new(15., -14., 205.),
+                scale: Vec3::new(0.007, 0.007, 0.),
+                ..default()
+            },
+            "When the turn is complete,\n move on to the next day".to_string(),
+            "Next info".to_string(),
+            NextInfoText,
+            WorldTextMarker
+        ),
     ];
 
     let _ = commands
@@ -690,8 +774,23 @@ pub fn move_dice(
     let mut move_dice = move_dice_query.single_mut();
 
     if selected.selected && move_dice.can_roll {
+        move_dice.can_roll = false;
         let roll = thread_rng().gen_range(1..7);
         move_dice.value = roll;
+    }
+}
+pub fn next_day_button(
+    selected_query: Query<&Selected, With<NextButton>>,
+    mut move_dice_query: Query<&mut MoveDice>,
+    mut next_button_query: Query<&mut NextButton>,
+) {
+    let selected = selected_query.single();
+    let mut move_dice = move_dice_query.single_mut();
+    let mut next_button = next_button_query.single_mut();
+    if selected.selected && !move_dice.can_roll {
+        next_button.increase();
+        move_dice.can_roll = true;
+        move_dice.value = 0_isize;
     }
 }
 

@@ -1,5 +1,6 @@
 use crate::prelude::*;
 use crate::combat::{AttackButton,HeroSpellButton,AttackDice,ManaDice,Selected};
+use crate::MouseButton::Right;
 
 pub struct InteractivePlugin;
 
@@ -34,6 +35,7 @@ impl Plugin for InteractivePlugin {
             .add_system_set(
                 SystemSet::on_update(Deck)
                     .with_system(spell)
+                    .with_system(hint)
                     .with_system(skill_pack_exit_button)
             );
     }
@@ -43,6 +45,8 @@ impl Plugin for InteractivePlugin {
 #[derive(Component, Inspectable, Default)]
 pub struct Interactive;
 
+#[derive(Component)]
+pub struct Hint;
 
 #[derive(Default)]
 pub struct CursorState {
@@ -53,7 +57,7 @@ pub struct CursorState {
 }
 
 pub fn cursor_position(
-    mut camera_query: Query<(&mut Camera, &GlobalTransform), (With<Camera>)>,
+    camera_query: Query<(&mut Camera, &GlobalTransform), (With<Camera>)>,
     windows: Res<Windows>,
     mut cursor_state: ResMut<CursorState>,
     buttons: Res<Input<MouseButton>>,
@@ -98,127 +102,127 @@ pub fn cursor_position(
 
 fn attack_button(
     cursor_state: Res<CursorState>,
-    mut item_position:
+    item_position:
     Query<(&Transform, &mut TextureAtlasSprite, &AttackButton), (With<Interactive>, With<AttackButton>)>,
     buttons: ResMut<Input<MouseButton>>,
-    mut selected_query: Query<&mut Selected, With<AttackButton>>,
+    selected_query: Query<&mut Selected, With<AttackButton>>,
 ) {
     combat_element_event(cursor_state, item_position, WHITE, buttons, selected_query);
 }
 
 fn hero_spell_button(
     cursor_state: Res<CursorState>,
-    mut item_position:
+    item_position:
     Query<(&Transform, &mut TextureAtlasSprite, &HeroSpellButton), (With<Interactive>, With<HeroSpellButton>)>,
     buttons: ResMut<Input<MouseButton>>,
-    mut selected_query: Query<&mut Selected, With<HeroSpellButton>>,
+    selected_query: Query<&mut Selected, With<HeroSpellButton>>,
 ) {
     combat_element_event(cursor_state, item_position, WHITE, buttons, selected_query);
 }
 
 fn combat_end_button(
     cursor_state: Res<CursorState>,
-    mut item_position:
+    item_position:
     Query<(&Transform, &mut TextureAtlasSprite, &CombatEndButton), (With<Interactive>, With<CombatEndButton>)>,
     buttons: ResMut<Input<MouseButton>>,
-    mut selected_query: Query<&mut Selected, With<CombatEndButton>>,
+    selected_query: Query<&mut Selected, With<CombatEndButton>>,
 ) {
     combat_element_event(cursor_state, item_position, WHITE, buttons, selected_query);
 }
 
 fn attack_dice(
     cursor_state: Res<CursorState>,
-    mut item_position:
+    item_position:
     Query<(&Transform, &mut TextureAtlasSprite, &AttackDice), (With<Interactive>, With<AttackDice>)>,
     buttons: ResMut<Input<MouseButton>>,
-    mut selected_query: Query<&mut Selected, With<AttackDice>>,
+    selected_query: Query<&mut Selected, With<AttackDice>>,
 ) {
     combat_element_event(cursor_state, item_position, WHITE, buttons, selected_query);
 }
 
 fn mana_dice(
     cursor_state: Res<CursorState>,
-    mut item_position:
+    item_position:
     Query<(&Transform, &mut TextureAtlasSprite, &ManaDice), (With<Interactive>, With<ManaDice>)>,
     buttons: ResMut<Input<MouseButton>>,
-    mut selected_query: Query<&mut Selected, With<ManaDice>>,
+    selected_query: Query<&mut Selected, With<ManaDice>>,
 ) {
     combat_element_event(cursor_state, item_position, WHITE, buttons, selected_query);
 }
 
 fn move_dice_button(
     cursor_state: Res<CursorState>,
-    mut item_position:
+    item_position:
     Query<(&Transform, &mut TextureAtlasSprite, &MoveDice), (With<Interactive>, With<MoveDice>)>,
     buttons: ResMut<Input<MouseButton>>,
-    mut selected_query: Query<&mut Selected, With<MoveDice>>,
+    selected_query: Query<&mut Selected, With<MoveDice>>,
 ) {
     combat_element_event(cursor_state, item_position, WHITE, buttons, selected_query);
 }
 
 fn back_pack_button(
     cursor_state: Res<CursorState>,
-    mut item_position:
+    item_position:
     Query<(&Transform, &mut TextureAtlasSprite, &Backpack), (With<Interactive>, With<Backpack>)>,
     buttons: ResMut<Input<MouseButton>>,
-    mut selected_query: Query<&mut Selected, With<Backpack>>,
+    selected_query: Query<&mut Selected, With<Backpack>>,
 ) {
     combat_element_event(cursor_state, item_position, WHITE, buttons, selected_query);
 }
 
 fn back_pack_exit_button(
     cursor_state: Res<CursorState>,
-    mut item_position:
+    item_position:
     Query<(&Transform, &mut TextureAtlasSprite, &BagExit), (With<Interactive>, With<BagExit>)>,
     buttons: ResMut<Input<MouseButton>>,
-    mut selected_query: Query<&mut Selected, With<BagExit>>,
+    selected_query: Query<&mut Selected, With<BagExit>>,
 ) {
     combat_element_event(cursor_state, item_position, WHITE, buttons, selected_query);
 }
 
 fn skill_pack_exit_button(
     cursor_state: Res<CursorState>,
-    mut item_position:
+    item_position:
     Query<(&Transform, &mut TextureAtlasSprite, &SkillPackExit), (With<Interactive>, With<SkillPackExit>)>,
     buttons: ResMut<Input<MouseButton>>,
-    mut selected_query: Query<&mut Selected, With<SkillPackExit>>,
+    selected_query: Query<&mut Selected, With<SkillPackExit>>,
 ) {
     combat_element_event(cursor_state, item_position, WHITE, buttons, selected_query);
 }
 
 fn accept_reward_button(
     cursor_state: Res<CursorState>,
-    mut item_position:
+    item_position:
     Query<(&Transform, &mut TextureAtlasSprite, &AcceptRewardButton), (With<Interactive>, With<AcceptRewardButton>)>,
     buttons: ResMut<Input<MouseButton>>,
-    mut selected_query: Query<&mut Selected, With<AcceptRewardButton>>,
+    selected_query: Query<&mut Selected, With<AcceptRewardButton>>,
 ) {
     combat_element_event(cursor_state, item_position, WHITE, buttons, selected_query);
 }
 
 fn skill_pack_button(
     cursor_state: Res<CursorState>,
-    mut item_position:
+    item_position:
     Query<(&Transform, &mut TextureAtlasSprite, &SkillPack), (With<Interactive>, With<SkillPack>)>,
     buttons: ResMut<Input<MouseButton>>,
-    mut selected_query: Query<&mut Selected, With<SkillPack>>,
+    selected_query: Query<&mut Selected, With<SkillPack>>,
 ) {
     combat_element_event(cursor_state, item_position, WHITE, buttons, selected_query);
 }
 
 fn next_button(
     cursor_state: Res<CursorState>,
-    mut item_position:
-    Query<(&Transform, &mut TextureAtlasSprite, &Next), (With<Interactive>, With<Next>)>,
+    item_position:
+    Query<(&Transform, &mut TextureAtlasSprite, &NextButton), (With<Interactive>, With<NextButton>)>,
     buttons: ResMut<Input<MouseButton>>,
-    mut selected_query: Query<&mut Selected, With<Next>>,
+    selected_query: Query<&mut Selected, With<NextButton>>,
 ) {
     combat_element_event(cursor_state, item_position, WHITE, buttons, selected_query);
 }
 
 fn spell(
     cursor_state: Res<CursorState>,
-    mut item_position: Query<(&Transform, &mut TextureAtlasSprite, &mut Selected), (With<CardView>, With<Interactive>)>,
+    item_position: Query<(&Transform, &mut TextureAtlasSprite, &mut Selected), (With<CardView>, With<Interactive>)>,
     buttons: Res<Input<MouseButton>>,
 ) {
     bag_element(cursor_state, item_position, buttons);
@@ -226,7 +230,7 @@ fn spell(
 
 fn item(
     cursor_state: Res<CursorState>,
-    mut item_position: Query<(&Transform, &mut TextureAtlasSprite, &mut Selected), (With<Item>, With<Interactive>)>,
+    item_position: Query<(&Transform, &mut TextureAtlasSprite, &mut Selected), (With<Item>, With<Interactive>)>,
     buttons: Res<Input<MouseButton>>,
 ) {
     bag_element(cursor_state, item_position, buttons);
@@ -256,8 +260,18 @@ fn bag_element<T: Component>(
     }
 }
 
-
-
+fn hint(
+    mut hint_query: Query<&mut Visibility, With<Hint>>,
+    buttons: Res<Input<MouseButton>>,
+) {
+    for mut hint in hint_query.iter_mut() {
+        if buttons.pressed(Right) {
+            hint.is_visible = true;
+        } else {
+            hint.is_visible = false;
+        }
+    }
+}
 
 fn combat_skill_card_event(
     cursor_state: Res<CursorState>,
@@ -294,7 +308,7 @@ fn combat_element_event<T: Component>(
     cursor_state: Res<CursorState>,
     mut item_position: Query<(&Transform, &mut TextureAtlasSprite, &T), (With<Interactive>, With<T>)>,
     base_element_color: Color,
-    mut buttons: ResMut<Input<MouseButton>>,
+    buttons: ResMut<Input<MouseButton>>,
     mut selected_query: Query<&mut Selected, With<T>>,
 ) {
     for (transform, mut sprite, _element) in item_position.iter_mut() {
@@ -319,8 +333,8 @@ fn combat_element_event<T: Component>(
     }
 }
 
-fn rectangle_click_range(item_pos: &Vec2, size: &Vec2) -> std::vec::Vec<Vec2> {
-    let mut range = std::vec::Vec::new();
+fn rectangle_click_range(item_pos: &Vec2, size: &Vec2) -> Vec<Vec2> {
+    let mut range = Vec::new();
 
     //x rectangle size and step count
     let x_delta = (size.x / 2.0).round() as usize;

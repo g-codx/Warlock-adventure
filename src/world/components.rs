@@ -25,7 +25,27 @@ pub struct SkillPackExit;
 pub struct SkillPack;
 
 #[derive(Component)]
-pub struct Next;
+pub struct NextButton {
+    pub days: usize
+}
+
+impl NextButton {
+    pub fn increase(&mut self) {
+        self.days += 1;
+    }
+
+    pub fn enemy_buff(&self) -> usize {
+        if self.days < 7 {
+            0
+        }
+        else if self.days < 14 {
+            3
+        }
+        else {
+            6
+        }
+    }
+}
 
 #[derive(Component)]
 pub struct WorldInterface;
@@ -53,6 +73,24 @@ pub struct Town;
 
 #[derive(Component)]
 pub struct MoveDiceText;
+
+#[derive(Component)]
+pub struct DaysCountText;
+
+#[derive(Component)]
+pub struct WorldTextMarker;
+
+#[derive(Component)]
+pub struct DeckInfoHint;
+
+#[derive(Component)]
+pub struct BagInfoHint;
+
+#[derive(Component)]
+pub struct MoveInfoText;
+
+#[derive(Component)]
+pub struct NextInfoText;
 
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]

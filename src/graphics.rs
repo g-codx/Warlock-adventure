@@ -549,8 +549,7 @@ pub fn spawn_combat_card(
 ) -> Entity {
     let template = template_storage.skill_cards
         .iter()
-        .filter(|t| t.id == id)
-        .nth(0);
+        .find(|t| t.id == id);
 
     if let Some(t) = template {
         let spell_sprite = TextureAtlasSprite {
@@ -640,8 +639,7 @@ pub fn spawn_spell_in_bag(
 ) -> Entity {
     let template = template_storage.skill_cards
         .iter()
-        .filter(|t| t.id == id)
-        .nth(0);
+        .find(|t| t.id == id);
 
     let spell_sprite = TextureAtlasSprite {
         index: template.unwrap().sprite_index.unwrap(),
@@ -652,8 +650,8 @@ pub fn spawn_spell_in_bag(
     if is_combat_deck {
         spawn_spell(
             commands,
-            &texture_storage,
-            &transform,
+            texture_storage,
+            transform,
             spell_sprite,
         )
             .insert(CombatDeckSpell)
@@ -666,10 +664,29 @@ pub fn spawn_spell_in_bag(
             })
             .id()
     } else {
+        let hint_sprite = TextureAtlasSprite {
+            index: template.unwrap().sub_sprite_index.unwrap(),
+            custom_size: Some(Vec2::new(1., 1.)),
+            ..default()
+        };
+        let hint = commands
+            .spawn_bundle(SpriteSheetBundle {
+                sprite: hint_sprite,
+                texture_atlas: texture_storage.combat_hint_atlas_handle.clone(),
+                transform: Transform::from_xyz(0., 0., 0.),
+                visibility: Visibility {
+                    is_visible: false
+                },
+                ..default()
+            })
+            .insert(Hint)
+            .insert(Name::new("Spell hint"))
+            .id();
+
         spawn_spell(
             commands,
-            &texture_storage,
-            &transform,
+            texture_storage,
+            transform,
             spell_sprite,
         )
             .insert(Name::new("Spell sprite"))
@@ -679,6 +696,7 @@ pub fn spawn_spell_in_bag(
                 id: template.unwrap().id,
                 level: template.unwrap().level,
             })
+            .push_children(&[hint])
             .id()
     }
 }

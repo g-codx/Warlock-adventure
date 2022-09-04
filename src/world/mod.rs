@@ -32,7 +32,9 @@ impl Plugin for WorldPlugin {
                     .with_system(bag_button)
                     .with_system(skill_pack_button)
                     .with_system(town_event)
-                    .with_system(update_move_points_text.after(spawn_world_interface))
+                    .with_system(next_day_button)
+                    .with_system(update_move_points_text)
+                    .with_system(update_days_count_text)
             )
             .add_system_set(
                 SystemSet::on_enter(BagPack)

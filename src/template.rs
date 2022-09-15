@@ -77,7 +77,6 @@ impl Templates {
                     EntityType::Item => {
                         items.push(t.clone())
                     }
-                    _ => {}
                 }
             });
 
@@ -95,7 +94,6 @@ impl Templates {
     }
 }
 
-
 pub struct TemplateStorage {
     pub skill_cards: Vec<Template>,
     pub enemies: Vec<Template>,
@@ -103,66 +101,18 @@ pub struct TemplateStorage {
     pub types: Vec<(usize, EntityType, Option<usize>)>,
 }
 
-
 impl TemplateStorage {
-    //deprecated
-    pub fn roll_card(&self, lvl: usize) -> CardView {
-        let card: Vec<CardView> = self.skill_cards
-            .iter()
-            .filter(|t| t.level == lvl)
-            .map(|t| CardView {
-                id: t.id,
-                level: t.level
-            })
-            .collect();
-
-        let size = card.len();
-        let roll = thread_rng().gen_range(0..size);
-
-        *card.get(roll).unwrap()
-    }
-
-    //deprecated
-    pub fn roll_item(&self, lvl: usize) -> ItemView {
-        let items: Vec<ItemView> = self.items
-            .iter()
-            .filter(|t| t.level == lvl)
-            .map(|t| ItemView {
-                id: t.id,
-                level: t.level,
-            })
-            .collect();
-
-        let size = items.len();
-        let roll = thread_rng().gen_range(0..size);
-
-        *items.get(roll).unwrap()
-    }
-
-    pub fn get_card(&self, id: usize) -> CardView {
-        self.skill_cards
-            .iter()
-            .filter(|t| t.id == id)
-            .map(|t| CardView {
-                id: t.id,
-                level: t.level
-            })
-            .next()
-            .unwrap()
-    }
-
     pub fn get_enemy(&self, enemy_type: EnemyType) -> Option<&Template> {
         match enemy_type {
-            Lizard => self.enemies.iter().filter(|e| e.id == 15).next(),
-            EnemyType::Medusa => self.enemies.iter().filter(|e| e.id == 16).next(),
-            EnemyType::SmallDragon => self.enemies.iter().filter(|e| e.id == 17).next(),
-            EnemyType::Gin => self.enemies.iter().filter(|e| e.id == 18).next(),
-            EnemyType::BigDragon => self.enemies.iter().filter(|e| e.id == 19).next(),
-            EnemyType::Demon => self.enemies.iter().filter(|e| e.id == 20).next(),
+            Lizard => self.enemies.iter().find(|e| e.id == 15),
+            EnemyType::Medusa => self.enemies.iter().find(|e| e.id == 16),
+            EnemyType::SmallDragon => self.enemies.iter().find(|e| e.id == 17),
+            EnemyType::Gin => self.enemies.iter().find(|e| e.id == 18),
+            EnemyType::BigDragon => self.enemies.iter().find(|e| e.id == 19),
+            EnemyType::Demon => self.enemies.iter().find(|e| e.id == 20),
         }
     }
 }
-
 
 #[derive(Clone, Deserialize, Debug, Inspectable, Eq, PartialEq)]
 pub enum CardAction {

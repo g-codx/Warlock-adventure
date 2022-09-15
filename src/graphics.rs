@@ -2,8 +2,10 @@ use std::default::Default;
 use std::fmt;
 use std::fmt::Formatter;
 use bevy::ecs::system::EntityCommands;
+use bevy::ui::FocusPolicy;
 use crate::prelude::*;
 use crate::combat::{EnemyType, Selected};
+use crate::menu::{ButtonActive, UiAssets, UiCameraMarker};
 
 
 pub struct GraphicsPlugin;
@@ -47,7 +49,6 @@ impl GraphicsPlugin {
         let demon_image = assets.load("units/demon.png");
         let demon_atlas = TextureAtlas::from_grid(demon_image, Vec2::new(256.0, 256.0), 4, 4);
         let demon_atlas_handle = texture_atlases.add(demon_atlas);
-
 
         let warlock_skills_image = assets.load("skills/warlock_skills.png");
         let warlock_skills_atlas = TextureAtlas::from_grid(warlock_skills_image, Vec2::new(256.0, 256.0), 4, 4);
@@ -95,6 +96,8 @@ impl GraphicsPlugin {
         let items_atlas = TextureAtlas::from_grid(items_image, Vec2::new(256.0, 256.0), 4, 3);
         let items_atlas_handle = texture_atlases.add(items_atlas);
 
+        let menu_off_button_img = assets.load("interface/button_ready_off.png");
+        let menu_on_button_img = assets.load("interface/button_ready_on.png");
 
         commands.insert_resource(FramesSheet {
             lizard_handle: lizard_atlas_handle,
@@ -135,7 +138,6 @@ impl GraphicsPlugin {
 
             hero_idle_atlas_handle,
             hero_idle: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
-
         });
 
         commands.insert_resource(TextureStorage {
@@ -154,6 +156,8 @@ impl GraphicsPlugin {
             event_object_tiles,
             world_interface_handle,
             items_atlas_handle,
+            menu_off_button_img,
+            menu_on_button_img
         })
     }
 
@@ -178,7 +182,6 @@ pub enum AnimationType {
     Hurt,
     Death,
 }
-
 
 pub fn spawn_enemy_sprite(
     commands: &mut Commands,
@@ -269,7 +272,7 @@ pub fn spawn_enemy_sprite(
 }
 
 pub fn spawn_dice(
-    mut commands: &mut Commands,
+    commands: &mut Commands,
     texture_storage: &TextureStorage,
     is_attack: bool,
     transform: Transform,
@@ -321,7 +324,7 @@ impl fmt::Display for Element {
 }
 
 pub fn spawn_world_interface_element(
-    mut commands: &mut Commands,
+    commands: &mut Commands,
     texture_storage: &TextureStorage,
     transform: Transform,
     component: impl Component,
@@ -372,9 +375,8 @@ pub fn spawn_world_interface_element(
         .id()
 }
 
-
 pub fn spawn_combat_button(
-    mut commands: &mut Commands,
+    commands: &mut Commands,
     texture_storage: &TextureStorage,
     is_attack: bool,
     transform: Transform,
@@ -446,7 +448,8 @@ pub fn spawn_reward_button(
 pub fn spawn_combat_battleground(
     commands: &mut Commands,
     texture_storage: &TextureStorage,
-    enemy_type: &EnemyType
+    enemy_type: &EnemyType,
+    transform: Transform
 ) -> Entity {
 
     let background = match enemy_type {
@@ -476,7 +479,7 @@ pub fn spawn_combat_battleground(
                 ..default()
             },
             texture: background,
-            transform: Transform::from_xyz(0., 0., 50.),
+            transform,
             ..default()
         })
         .insert(GlobalTransform::default())
@@ -535,6 +538,7 @@ pub fn spawn_bag_item(
                 ..default()
             })
             .insert(Name::new(template.name.clone()))
+            .insert(NonInteractiveItem)
             .insert(item)
             .id()
     }
@@ -716,7 +720,6 @@ fn spawn_spell<'w, 's, 'a>(
         })
 }
 
-
 fn spawn_background<'w, 's, 'a>(
     commands: &'a mut Commands<'w, 's>,
     texture_storage: &TextureStorage,
@@ -734,9 +737,8 @@ fn spawn_background<'w, 's, 'a>(
         })
 }
 
-
 pub fn spawn_background_element(
-    mut commands: &mut Commands,
+    commands: &mut Commands,
     texture_storage: &TextureStorage,
     custom_size: Option<Vec2>,
     transform: Transform,
@@ -759,7 +761,7 @@ pub fn spawn_background_element(
 }
 
 pub fn spawn_enemy_border_frame(
-    mut commands: &mut Commands,
+    commands: &mut Commands,
     texture_storage: &TextureStorage,
 ) -> Entity {
     commands
@@ -779,7 +781,7 @@ pub fn spawn_enemy_border_frame(
 }
 
 pub fn spawn_combat_icon(
-    mut commands: &mut Commands,
+    commands: &mut Commands,
     texture_storage: &TextureStorage,
     transform: Transform,
     index: usize,
@@ -1057,6 +1059,68 @@ pub fn spawn_tile(
     tile
 }
 
+pub fn spawn_menu_button<T: Component>(
+    texture_storage: &TextureStorage,
+    commands: &mut Commands,
+    sub_component: T,
+    name: String,
+    position: Rect<Val>
+) {
+    let ui_assets = UiAssets {
+        font: texture_storage.font.clone(),
+        button: texture_storage.menu_off_button_img.clone(),
+        button_pressed: texture_storage.menu_on_button_img.clone()
+    };
+
+    commands
+        .spawn_bundle(ButtonBundle {
+            style: Style {
+                align_self: AlignSelf::Center,
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                size: Size::new(Val::Percent(15.0), Val::Percent(10.0)),
+                margin: Rect::all(Val::Auto),
+                position,
+                ..Default::default()
+            },
+            color: Color::NONE.into(),
+            ..Default::default()
+        })
+        .insert(ButtonActive(true))
+        .insert(sub_component)
+        .insert(UiCameraMarker)
+        .with_children(|parent| {
+            parent
+                .spawn_bundle(ImageBundle {
+                    style: Style {
+                        size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        ..Default::default()
+                    },
+                    image: ui_assets.button.clone().into(),
+                    ..Default::default()
+                })
+                .insert(FocusPolicy::Pass)
+                .with_children(|parent| {
+                    parent.spawn_bundle(TextBundle {
+                        text: Text::with_section(
+                            name,
+                            TextStyle {
+                                font: ui_assets.font.clone(),
+                                font_size: 18.0,
+                                color: Color::rgb(0.9, 0.9, 0.9),
+                            },
+                            Default::default(),
+                        ),
+                        focus_policy: FocusPolicy::Block,
+                        ..Default::default()
+                    });
+                });
+        });
+    commands
+        .insert_resource(ui_assets);
+}
 
 pub struct FramesSheet {
     pub lizard_handle: Handle<TextureAtlas>,
@@ -1115,6 +1179,8 @@ pub struct TextureStorage {
     pub event_object_tiles: Handle<TextureAtlas>,
     pub world_interface_handle: Handle<TextureAtlas>,
     pub items_atlas_handle: Handle<TextureAtlas>,
+    pub menu_off_button_img: Handle<Image>,
+    pub menu_on_button_img: Handle<Image>
 }
 
 #[derive(Component, Reflect, Default)]
@@ -1124,5 +1190,3 @@ pub struct FrameAnimation {
     pub frames: Vec<usize>,
     pub current_frame: usize,
 }
-
-

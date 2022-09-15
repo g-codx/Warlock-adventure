@@ -142,15 +142,12 @@ pub fn update_text<T: Component, M: Component>(
     mut text_query: Query<&mut Text, (With<T>, Without<M>)>,
     value: isize,
 ) {
-    // let mut text = text_query.single_mut();
 
     for mut t in text_query.iter_mut() {
         t.sections.iter_mut().for_each(|mut s| {
             s.value = value.to_string();
         });
     }
-
-
 }
 
 pub fn attack_dice_roll(
@@ -283,7 +280,7 @@ pub fn combat_end_button(
     mut state: ResMut<State<GameState>>,
     selected_query: Query<&Selected, With<CombatEndButton>>,
     mut player_transform_query: Query<&mut Transform, With<Player>>,
-    mut encounter_query: Query<(&Transform, &mut EncounterType), (With<EncounterSpawner>, Without<Player>)>,
+    mut encounter_query: Query<(&Transform, &mut EncounterType),SpawnerFilter >,
 ) {
     if state.current() == &World || state.current() == &BagPack || state.current() == &Deck {
         return;
@@ -651,7 +648,12 @@ pub fn spawn_enemy(
             enemy_type,
         );
 
-        spawn_combat_battleground(&mut commands, &texture_storage, &enemy_type);
+        spawn_combat_battleground(
+            &mut commands,
+            &texture_storage,
+            &enemy_type,
+            Transform::from_xyz(0., 0., 50.)
+        );
 
         commands
             .entity(sprite)

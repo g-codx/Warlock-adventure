@@ -72,7 +72,3 @@ impl Plugin for CombatPlugin {
             );
     }
 }
-
-
-
-

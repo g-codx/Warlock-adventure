@@ -1,7 +1,6 @@
 mod systems;
 mod components;
 
-use crate::player::*;
 pub use crate::prelude::*;
 pub use crate::world::systems::*;
 pub use crate::world::components::*;
@@ -19,10 +18,12 @@ impl Plugin for WorldPlugin {
             .add_system_set(
                 SystemSet::on_enter(World)
                     .with_system(show_buttons)
+                    .with_system(spawn_player_world_stats)
             )
             .add_system_set(
                 SystemSet::on_exit(World)
                     .with_system(hide_buttons)
+                    .with_system(despawn_world_player_stats_bar)
             )
             .add_system_set(
                 SystemSet::on_update(World)
@@ -35,6 +36,10 @@ impl Plugin for WorldPlugin {
                     .with_system(next_day_button)
                     .with_system(update_move_points_text)
                     .with_system(update_days_count_text)
+                    .with_system(update_world_attack_text)
+                    .with_system(update_world_defense_text)
+                    .with_system(update_world_health_text)
+                    .with_system(update_world_mana_text)
             )
             .add_system_set(
                 SystemSet::on_enter(BagPack)

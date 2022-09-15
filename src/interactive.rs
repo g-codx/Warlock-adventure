@@ -57,7 +57,8 @@ pub struct CursorState {
 }
 
 pub fn cursor_position(
-    camera_query: Query<(&mut Camera, &GlobalTransform), (With<Camera>)>,
+    camera_query: 
+    Query<(&mut Camera, &GlobalTransform), CameraFilter>,
     windows: Res<Windows>,
     mut cursor_state: ResMut<CursorState>,
     buttons: Res<Input<MouseButton>>,
@@ -88,14 +89,10 @@ pub fn cursor_position(
         if buttons.just_pressed(MouseButton::Left) {
             cursor_state.last_left_click_float = world_pos;
             cursor_state.last_left_click = world_pos.round();
-            // println!("Last left rounding: {}", cursor_state.last_left_click);
-            // println!("Last left rounding: {}", cursor_state.last_left_click_float);
         }
 
         if buttons.just_pressed(MouseButton::Right) {
-            // cursor_state.last_right_click = world_pos;
             cursor_state.last_right_click = world_pos.round();
-            // println!("Last left rounding: {}", cursor_state.last_right_click);
         }
     }
 }
@@ -303,7 +300,6 @@ fn combat_skill_card_event(
     }
 }
 
-//small element 1x1
 fn combat_element_event<T: Component>(
     cursor_state: Res<CursorState>,
     mut item_position: Query<(&Transform, &mut TextureAtlasSprite, &T), (With<Interactive>, With<T>)>,
@@ -335,14 +331,9 @@ fn combat_element_event<T: Component>(
 
 fn rectangle_click_range(item_pos: &Vec2, size: &Vec2) -> Vec<Vec2> {
     let mut range = Vec::new();
-
-    //x rectangle size and step count
     let x_delta = (size.x / 2.0).round() as usize;
-
-    //y rectangle size and step count
     let y_delta = (size.y / 2.0).round() as usize;
 
-    //centre rectangle with round
     let mut x = item_pos.x;
     let mut y = item_pos.y;
 

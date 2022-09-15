@@ -125,7 +125,6 @@ pub enum CombatState {
     End,
 }
 
-
 #[derive(Component)]
 pub struct AttackDice;
 

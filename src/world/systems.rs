@@ -41,7 +41,7 @@ pub fn world_object_event(
     texture_storage: Res<TextureStorage>,
     template_storage: Res<TemplateStorage>,
     mut player_stats_query: Query<(&Transform, &mut CombatStats), With<Player>>,
-    mut event_query: Query<(&Transform, &mut WorldEvent), (With<WorldEventMarker>, Without<Player>)>,
+    mut event_query: Query<(&Transform, &mut WorldEvent), WorldEventFilter>,
 ) {
     let (player_transform, mut player_stats) = player_stats_query.single_mut();
     let player_translation= player_transform.translation;
@@ -297,6 +297,7 @@ pub fn update_spell_position(
 
 pub fn take_item(
     mut selected_query: Query<(&mut Item, &Selected, Entity)>,
+    items_in_player_query: Query<(&Item, Entity), NonInteractiveItemFilter>,
     mut player_query: Query<&mut Player>,
     mut commands: Commands,
     texture_storage: Res<TextureStorage>,
@@ -309,8 +310,13 @@ pub fn take_item(
         if selected.selected {
             let itm = match item.buff_type {
                 CardAction::DefenceBuff => {
-                    player.item_build.defense = Some((item.id, item.value));
+                    if let Some(val) = player.item_build.defense {
+                        if val.1 > item.value {
+                            return;
+                        }
+                    }
 
+                    player.item_build.defense = Some((item.id, item.value));
                     spawn_bag_item(
                         &mut commands,
                         &texture_storage,
@@ -321,8 +327,13 @@ pub fn take_item(
                     )
                 }
                 CardAction::AttackBuff => {
-                    player.item_build.attack = Some((item.id, item.value));
+                    if let Some(val) = player.item_build.attack {
+                        if val.1 > item.value {
+                            return;
+                        }
+                    }
 
+                    player.item_build.attack = Some((item.id, item.value));
                     spawn_bag_item(
                         &mut commands,
                         &texture_storage,
@@ -333,8 +344,13 @@ pub fn take_item(
                     )
                 }
                 CardAction::ManaBuff => {
-                    player.item_build.mana = Some((item.id, item.value));
+                    if let Some(val) = player.item_build.mana {
+                        if val.1 > item.value {
+                            return;
+                        }
+                    }
 
+                    player.item_build.mana = Some((item.id, item.value));
                     spawn_bag_item(
                         &mut commands,
                         &texture_storage,
@@ -345,8 +361,13 @@ pub fn take_item(
                     )
                 }
                 CardAction::HealthBuff => {
-                    player.item_build.health = Some((item.id, item.value));
+                    if let Some(val) = player.item_build.health {
+                        if val.1 > item.value {
+                            return;
+                        }
+                    }
 
+                    player.item_build.health = Some((item.id, item.value));
                     spawn_bag_item(
                         &mut commands,
                         &texture_storage,
@@ -358,6 +379,7 @@ pub fn take_item(
                 }
                 _ => panic!("Illegal template state")
             };
+            despawn_old_item(&mut commands, item.buff_type.clone(), &items_in_player_query);
             commands.entity(bag_interface).push_children(&[itm]);
             commands.entity(entity).despawn_recursive();
 
@@ -367,6 +389,18 @@ pub fn take_item(
                 .unwrap();
 
             player.items_bag.remove(index);
+        }
+    }
+}
+
+fn despawn_old_item(
+    commands: &mut Commands,
+    buff_type: CardAction,
+    items_in_player: &Query<(&Item, Entity), NonInteractiveItemFilter>,
+) {
+    for (item, entity) in items_in_player.iter() {
+        if item.buff_type == buff_type {
+            commands.entity(entity).despawn_recursive();
         }
     }
 }
@@ -779,6 +813,7 @@ pub fn move_dice(
         move_dice.value = roll;
     }
 }
+
 pub fn next_day_button(
     selected_query: Query<&Selected, With<NextButton>>,
     mut move_dice_query: Query<&mut MoveDice>,
@@ -806,4 +841,172 @@ pub fn toggle_visible<T: Component>(
             }
         }
     }
+}
+
+pub fn spawn_world_player_stats_icons(
+    commands: &mut Commands,
+    texture_storage: &Res<TextureStorage>,
+) -> Entity {
+
+    let sprites = vec![
+        spawn_combat_icon(
+            commands,
+            texture_storage,
+            Transform::from_xyz(15.5, -3.02, 150.),
+            2,
+            "Attack icon",
+        ),
+        spawn_combat_icon(
+            commands,
+            texture_storage,
+            Transform::from_xyz(15.5, -3.7, 150.),
+            5,
+            "Defense icon",
+        ),
+        spawn_combat_icon(
+            commands,
+            texture_storage,
+            Transform::from_xyz(15.5, -4.4, 150.),
+            4,
+            "Health icon",
+        ),
+        spawn_combat_icon(
+            commands,
+            texture_storage,
+            Transform::from_xyz(15.5, -5.1, 150.),
+            3,
+            "Mana icon",
+        )
+    ];
+
+    commands
+        .spawn()
+        .insert(Transform::default())
+        .insert(GlobalTransform::default())
+        .insert(WorldPlayerStatsMarker)
+        .insert(Name::new("Player stats icons"))
+        .push_children(&sprites)
+        .id()
+}
+
+pub fn spawn_world_player_text(
+    commands: &mut Commands,
+    player_stats_query: &Query<&CombatStats, With<Player>>,
+    texture_storage: &Res<TextureStorage>,
+) -> Entity {
+    let player_stats = player_stats_query.single();
+
+    let children = vec![
+        spawn_text(
+            commands,
+            texture_storage,
+            Transform {
+                translation: Vec3::new(14.5, -3., 205.0),
+                scale: Vec3::new(0.01, 0.01, 0.),
+                ..default()
+            },
+            player_stats.attack.to_string(),
+            "World attack text".to_string(),
+            WorldAttackText,
+            WorldPlayerStatsMarker,
+        ),
+        spawn_text(
+            commands,
+            texture_storage,
+            Transform {
+                translation: Vec3::new(14.5, -3.7, 205.0),
+                scale: Vec3::new(0.01, 0.01, 0.),
+                ..default()
+            },
+            player_stats.defense.to_string(),
+            "World defense text".to_string(),
+            WorldDefenseText,
+            WorldPlayerStatsMarker,
+        ),
+        spawn_text(
+            commands,
+            texture_storage,
+            Transform {
+                translation: Vec3::new(14.5, -4.4, 205.0),
+                scale: Vec3::new(0.01, 0.01, 0.),
+                ..default()
+            },
+            player_stats.health.to_string(),
+            "World health text".to_string(),
+            WorldHealthText,
+            WorldPlayerStatsMarker,
+        ),
+        spawn_text(
+            commands,
+            texture_storage,
+            Transform {
+                translation: Vec3::new(14.5, -5.1, 205.0),
+                scale: Vec3::new(0.01, 0.01, 0.),
+                ..default()
+            },
+            player_stats.mana.to_string(),
+            "World mana text".to_string(),
+            WorldManaText,
+            WorldPlayerStatsMarker,
+        )
+    ];
+
+    commands
+        .spawn()
+        .insert(Transform::default())
+        .insert(GlobalTransform::default())
+        .insert(Name::new("Player stat text"))
+        .insert(WorldPlayerStatsMarker)
+        .push_children(&children)
+        .id()
+}
+
+pub fn despawn_world_player_stats_bar(
+    mut commands: Commands,
+    bag_query: Query<Entity, With<WorldPlayerStatsMarker>>,
+) {
+    for entity in bag_query.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+}
+
+pub fn spawn_player_world_stats(
+    mut commands: Commands,
+    player_stats_query: Query<&CombatStats, With<Player>>,
+    texture_storage: Res<TextureStorage>,
+) {
+    spawn_world_player_text(&mut commands, &player_stats_query, &texture_storage);
+    spawn_world_player_stats_icons(&mut commands, &texture_storage);
+}
+
+pub fn update_world_attack_text(
+    text_query: Query<&mut Text, (With<WorldAttackText>, Without<EnemyMarker>)>,
+    player_stats_query: Query<&CombatStats, With<Player>>
+) {
+    let player_att = player_stats_query.single().attack;
+    update_text(text_query, player_att);
+}
+
+pub fn update_world_defense_text(
+    text_query: Query<&mut Text, (With<WorldDefenseText>, Without<EnemyMarker>)>,
+    player_stats_query: Query<&CombatStats, With<Player>>
+) {
+    let player_def = player_stats_query.single().defense;
+    update_text(text_query, player_def);
+}
+
+pub fn update_world_health_text(
+    text_query: Query<&mut Text, (With<WorldHealthText>, Without<EnemyMarker>)>,
+    player_stats_query: Query<&CombatStats, With<Player>>
+) {
+    let player_health = player_stats_query.single().health;
+    update_text(text_query, player_health);
+}
+
+pub fn update_world_mana_text(
+    text_query: Query<&mut Text, (With<WorldManaText>, Without<EnemyMarker>)>,
+    player_stats_query: Query<&CombatStats, With<Player>>
+) {
+    let player_mana = player_stats_query.single().mana;
+    update_text(text_query, player_mana);
 }

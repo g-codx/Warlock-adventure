@@ -1,6 +1,6 @@
-use crate::KeyCode::{A, D, S, W};
-use crate::MouseButton::Left;
-use crate::player::Player;
+use crate::KeyCode::*;
+use crate::menu::*;
+use crate::player::*;
 use crate::prelude::*;
 
 pub struct CameraPlugin;
@@ -12,6 +12,14 @@ impl Plugin for CameraPlugin {
             .add_system_set(
                 SystemSet::on_update(World)
                     .with_system(camera_motion)
+            )
+            .add_system_set(
+                SystemSet::on_exit(Combat)
+                    .with_system(update_camera_position)
+            )
+            .add_system_set(
+                SystemSet::on_enter(Menu)
+                    .with_system(update_camera_in_menu.after(spawn_menu))
             );
     }
 }
@@ -31,68 +39,61 @@ fn spawn_camera(mut commands: Commands) {
     commands.spawn_bundle(camera);
 }
 
-// fn camera_motion(
-//     mut camera_query: Query<&mut Transform, (Without<Player>, With<Camera>)>,
-//     windows: Res<Windows>,
-//     time: Res<Time>
-// ) {
-//     let mut camera_transform = camera_query.single_mut();
-//     let window = windows.get_primary().unwrap();
-//
-//     if let Some(screen_pos) = window.cursor_position() {
-//         let y_cursor_delta = window.height() - screen_pos.y;
-//         let x_cursor_delta = window.width() - screen_pos.x;
-//
-//         if CAMERA_MOVE_BORDER.contains(&y_cursor_delta) {
-//             camera_transform.translation.y += CAMERA_SPEED * time.delta_seconds() ;
-//         } else if CAMERA_MOVE_BORDER.contains(&screen_pos.y) {
-//             camera_transform.translation.y -= CAMERA_SPEED * time.delta_seconds();
-//         } else if CAMERA_MOVE_BORDER.contains(&x_cursor_delta) {
-//             camera_transform.translation.x += CAMERA_SPEED * time.delta_seconds();
-//         } else if CAMERA_MOVE_BORDER.contains(&screen_pos.x) {
-//             camera_transform.translation.x -= CAMERA_SPEED * time.delta_seconds();
-//         }
-//
-//     }
-// }
+fn update_camera_position(
+    mut camera_query: Query<&mut Transform, (Without<Player>, With<Camera>)>,
+    player_query: Query<&Transform, (Without<Camera>, With<Player>)>,
+) {
+    let mut camera = camera_query.single_mut();
+    let player = player_query.single();
+    camera.translation = Vec3::new(player.translation.x, player.translation.y, camera.translation.z);
+}
+
+fn update_camera_in_menu(
+    mut camera_query: Query<&mut Transform, UiCameraFilter>,
+) {
+    let mut camera = camera_query.single_mut();
+    camera.translation = Vec3::new(10., -10., camera.translation.z);
+}
 
 fn camera_motion(
     mut camera_query: Query<&mut Transform, (Without<Player>, With<Camera>)>,
     windows: Res<Windows>,
     time: Res<Time>,
     keys: Res<Input<KeyCode>>,
-    buttons: Res<Input<MouseButton>>,
 ) {
     let mut camera_transform = camera_query.single_mut();
     let window = windows.get_primary().unwrap();
 
+    let can_move_top_y  = camera_transform.translation.y < 4.;
+    let can_move_bot_y = camera_transform.translation.y > -20.;
+    let can_move_left_x = camera_transform.translation.x > 1.;
+    let can_move_right_x = camera_transform.translation.x < 13.;
 
     if let Some(screen_pos) = window.cursor_position() {
         let y_cursor_delta = window.height() - screen_pos.y;
         let x_cursor_delta = window.width() - screen_pos.x;
 
-        if CAMERA_MOVE_BORDER.contains(&y_cursor_delta) {
+        if CAMERA_MOVE_BORDER.contains(&y_cursor_delta) && can_move_top_y {
             camera_transform.translation.y += CAMERA_SPEED * time.delta_seconds();
-        } else if CAMERA_MOVE_BORDER.contains(&screen_pos.y) {
+        } else if CAMERA_MOVE_BORDER.contains(&screen_pos.y) && can_move_bot_y {
             camera_transform.translation.y -= CAMERA_SPEED * time.delta_seconds();
-        } else if CAMERA_MOVE_BORDER.contains(&x_cursor_delta) {
+        } else if CAMERA_MOVE_BORDER.contains(&x_cursor_delta) && can_move_right_x {
             camera_transform.translation.x += CAMERA_SPEED * time.delta_seconds();
-        } else if CAMERA_MOVE_BORDER.contains(&screen_pos.x) {
+        } else if CAMERA_MOVE_BORDER.contains(&screen_pos.x) && can_move_left_x {
             camera_transform.translation.x -= CAMERA_SPEED * time.delta_seconds();
         }
     }
 
-
-    if keys.pressed(W) {
+    if keys.pressed(W) && can_move_top_y{
         camera_transform.translation.y += CAMERA_SPEED * time.delta_seconds();
     }
-    if keys.pressed(S) {
+    if keys.pressed(S) && can_move_bot_y {
         camera_transform.translation.y -= CAMERA_SPEED * time.delta_seconds();
     }
-    if keys.pressed(A) {
+    if keys.pressed(A) && can_move_left_x {
         camera_transform.translation.x -= CAMERA_SPEED * time.delta_seconds();
     }
-    if keys.pressed(D) {
+    if keys.pressed(D) && can_move_right_x{
         camera_transform.translation.x += CAMERA_SPEED * time.delta_seconds();
     }
 }

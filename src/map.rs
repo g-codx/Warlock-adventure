@@ -31,14 +31,14 @@ pub struct Point(pub Transform);
 #[derive(Component, Inspectable, Default)]
 pub struct Tile(pub usize);
 
-fn hide_map(
+pub fn hide_map(
     children_query: Query<&Children, With<Map>>,
     child_visibility_query: Query<&mut Visibility, Without<Map>>,
 ) {
     toggle_visible(children_query, child_visibility_query, false);
 }
 
-fn show_map(
+pub fn show_map(
     children_query: Query<&Children, With<Map>>,
     child_visibility_query: Query<&mut Visibility, Without<Map>>,
 ) {

@@ -35,10 +35,10 @@ impl NextButton {
     }
 
     pub fn enemy_buff(&self) -> usize {
-        if self.days < 7 {
+        if self.days < 10 {
             0
         }
-        else if self.days < 14 {
+        else if self.days < 20 {
             3
         }
         else {
@@ -91,6 +91,24 @@ pub struct MoveInfoText;
 
 #[derive(Component)]
 pub struct NextInfoText;
+
+#[derive(Component)]
+pub struct WorldAttackText;
+
+#[derive(Component)]
+pub struct WorldDefenseText;
+
+#[derive(Component)]
+pub struct WorldHealthText;
+
+#[derive(Component)]
+pub struct WorldManaText;
+
+#[derive(Component)]
+pub struct WorldPlayerStatsMarker;
+
+#[derive(Component)]
+pub struct NonInteractiveItem;
 
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]

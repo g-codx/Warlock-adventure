@@ -41,7 +41,7 @@ pub fn player_movement(
 
 pub fn player_encounter_checking(
     player_query: Query<&Transform, With<Player>>,
-    encounter_query: Query<(&Transform, &EncounterType), (With<EncounterSpawner>, Without<Player>)>,
+    encounter_query: Query<(&Transform, &EncounterType), SpawnerFilter>,
     mut state: ResMut<State<GameState>>,
     mut encounter_event: EventWriter<EncounterEvent>,
     mut move_dice_query: Query<&mut MoveDice>
